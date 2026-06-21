@@ -1,0 +1,18 @@
+# IntelliJ
+.idea/
+*.iml
+
+# Java / Maven
+target/
+backend/target/
+*.class
+
+# Logs
+*.log
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Variables locales
+.env
