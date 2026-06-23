@@ -19,26 +19,34 @@ public class AlertController {
 
     @GetMapping
     public List<Alert> getAll() {
+        alertService.synchronizeAutomaticAlerts();
         return alertService.findAll();
     }
 
     @GetMapping("/unread")
     public List<Alert> getUnread() {
+        alertService.synchronizeAutomaticAlerts();
         return alertService.findUnread();
     }
 
     @PostMapping
-    public Alert create(@Valid @RequestBody Alert alert) {
+    public Alert create(
+            @Valid @RequestBody Alert alert
+    ) {
         return alertService.save(alert);
     }
 
     @PutMapping("/{id}/read")
-    public Alert markAsRead(@PathVariable Long id) {
+    public Alert markAsRead(
+            @PathVariable Long id
+    ) {
         return alertService.markAsRead(id);
     }
 
     @PutMapping("/{id}/unread")
-    public Alert markAsUnread(@PathVariable Long id) {
+    public Alert markAsUnread(
+            @PathVariable Long id
+    ) {
         return alertService.markAsUnread(id);
     }
 
@@ -47,9 +55,19 @@ public class AlertController {
         return alertService.generateLowStockAlerts();
     }
 
+    @PostMapping("/generate-medical")
+    public List<Alert> generateMedicalAlerts() {
+        return alertService.generateMedicalAlerts();
+    }
+
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
+    public ResponseEntity<Void> delete(
+            @PathVariable Long id
+    ) {
         alertService.delete(id);
-        return ResponseEntity.noContent().build();
+
+        return ResponseEntity
+                .noContent()
+                .build();
     }
 }

@@ -30,10 +30,23 @@ public class MedicalHistory {
     private TipoHistorialMedico tipo;
 
     @NotBlank(message = "La descripción es obligatoria")
+    @Column(length = 1000)
     private String descripcion;
 
     @NotNull(message = "La fecha es obligatoria")
     private LocalDate fecha;
+
+    /*
+     * Se utiliza cuando el registro es una vacuna.
+     * Permitirá generar una alerta automática.
+     */
+    private LocalDate fechaProxima;
+
+    /*
+     * Se utiliza cuando el registro es un tratamiento.
+     * Permitirá avisar cuándo vence.
+     */
+    private LocalDate fechaVencimiento;
 
     @NotBlank(message = "El responsable es obligatorio")
     private String responsable;

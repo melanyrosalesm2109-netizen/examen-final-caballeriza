@@ -6,9 +6,15 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
 
-public interface AlertRepository extends JpaRepository<Alert, Long> {
+public interface AlertRepository
+        extends JpaRepository<Alert, Long> {
 
     List<Alert> findByLeidaFalse();
+
+    List<Alert> findByReferenciaTipoAndReferenciaId(
+            String referenciaTipo,
+            Long referenciaId
+    );
 
     boolean existsByTipoAndReferenciaTipoAndReferenciaId(
             TipoAlerta tipo,

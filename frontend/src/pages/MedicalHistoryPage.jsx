@@ -12,9 +12,14 @@ import {
     TriangleAlert,
     X,
 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import {
+    useEffect,
+    useMemo,
+    useState,
+} from 'react';
 
 import PageHeader from '../components/PageHeader';
+import { ALERTS_UPDATED_EVENT } from '../services/alertService';
 import horseService from '../services/horseService';
 import medicalHistoryService from '../services/medicalHistoryService';
 
@@ -23,6 +28,8 @@ const initialForm = {
     tipo: 'VACUNA',
     descripcion: '',
     fecha: '',
+    fechaProxima: '',
+    fechaVencimiento: '',
     responsable: '',
 };
 
@@ -64,8 +71,12 @@ const typeConfig = {
     },
 };
 
-function getErrorMessage(requestError, fallbackMessage) {
-    const responseData = requestError.response?.data;
+function getErrorMessage(
+    requestError,
+    fallbackMessage,
+) {
+    const responseData =
+        requestError.response?.data;
 
     if (typeof responseData === 'string') {
         return responseData;
@@ -79,10 +90,15 @@ function getErrorMessage(requestError, fallbackMessage) {
         return responseData.message;
     }
 
-    if (responseData && typeof responseData === 'object') {
-        const firstMessage = Object.values(responseData).find(
-            (value) => typeof value === 'string',
-        );
+    if (
+        responseData
+        && typeof responseData === 'object'
+    ) {
+        const firstMessage =
+            Object.values(responseData).find(
+                (value) =>
+                    typeof value === 'string',
+            );
 
         if (firstMessage) {
             return firstMessage;
@@ -97,7 +113,8 @@ function formatDate(date) {
         return 'Sin fecha';
     }
 
-    const [year, month, day] = date.split('-');
+    const [year, month, day] =
+        date.split('-');
 
     if (!year || !month || !day) {
         return date;
@@ -107,20 +124,45 @@ function formatDate(date) {
 }
 
 function MedicalHistoryPage() {
-    const [histories, setHistories] = useState([]);
-    const [horses, setHorses] = useState([]);
-    const [form, setForm] = useState(initialForm);
-    const [editingId, setEditingId] = useState(null);
-    const [showForm, setShowForm] = useState(false);
-    const [horseFilter, setHorseFilter] = useState('TODOS');
-    const [typeFilter, setTypeFilter] = useState('TODOS');
-    const [search, setSearch] = useState('');
-    const [loading, setLoading] = useState(true);
-    const [saving, setSaving] = useState(false);
-    const [error, setError] = useState('');
+    const [histories, setHistories] =
+        useState([]);
+
+    const [horses, setHorses] =
+        useState([]);
+
+    const [form, setForm] =
+        useState(initialForm);
+
+    const [editingId, setEditingId] =
+        useState(null);
+
+    const [showForm, setShowForm] =
+        useState(false);
+
+    const [horseFilter, setHorseFilter] =
+        useState('TODOS');
+
+    const [typeFilter, setTypeFilter] =
+        useState('TODOS');
+
+    const [search, setSearch] =
+        useState('');
+
+    const [loading, setLoading] =
+        useState(true);
+
+    const [saving, setSaving] =
+        useState(false);
+
+    const [error, setError] =
+        useState('');
+
+    const [message, setMessage] =
+        useState('');
 
     const filteredHistories = useMemo(() => {
-        const searchValue = search.trim().toLowerCase();
+        const searchValue =
+            search.trim().toLowerCase();
 
         return histories
             .filter((history) => {
@@ -128,14 +170,19 @@ function MedicalHistoryPage() {
                     return true;
                 }
 
-                return String(history.horse?.id) === horseFilter;
+                return (
+                    String(history.horse?.id)
+                    === horseFilter
+                );
             })
             .filter((history) => {
                 if (typeFilter === 'TODOS') {
                     return true;
                 }
 
-                return history.tipo === typeFilter;
+                return (
+                    history.tipo === typeFilter
+                );
             })
             .filter((history) => {
                 if (!searchValue) {
@@ -157,7 +204,10 @@ function MedicalHistoryPage() {
                     );
             })
             .sort((first, second) =>
-                String(second.fecha).localeCompare(String(first.fecha)),
+                String(second.fecha)
+                    .localeCompare(
+                        String(first.fecha),
+                    ),
             );
     }, [
         histories,
@@ -171,17 +221,24 @@ function MedicalHistoryPage() {
             setLoading(true);
             setError('');
 
-            const [historyData, horseData] = await Promise.all([
+            const [
+                historyData,
+                horseData,
+            ] = await Promise.all([
                 medicalHistoryService.getAll(),
                 horseService.getAll(),
             ]);
 
             setHistories(
-                Array.isArray(historyData) ? historyData : [],
+                Array.isArray(historyData)
+                    ? historyData
+                    : [],
             );
 
             setHorses(
-                Array.isArray(horseData) ? horseData : [],
+                Array.isArray(horseData)
+                    ? horseData
+                    : [],
             );
         } catch (requestError) {
             setError(
@@ -200,12 +257,32 @@ function MedicalHistoryPage() {
     }, []);
 
     const handleChange = (event) => {
-        const { name, value } = event.target;
+        const { name, value } =
+            event.target;
 
-        setForm((current) => ({
-            ...current,
-            [name]: value,
-        }));
+        setForm((current) => {
+            if (name === 'tipo') {
+                return {
+                    ...current,
+                    tipo: value,
+
+                    fechaProxima:
+                        value === 'VACUNA'
+                            ? current.fechaProxima
+                            : '',
+
+                    fechaVencimiento:
+                        value === 'TRATAMIENTO'
+                            ? current.fechaVencimiento
+                            : '',
+                };
+            }
+
+            return {
+                ...current,
+                [name]: value,
+            };
+        });
     };
 
     const resetForm = () => {
@@ -220,20 +297,44 @@ function MedicalHistoryPage() {
         setEditingId(null);
         setShowForm(true);
         setError('');
+        setMessage('');
     };
 
     const openEditForm = (history) => {
         setForm({
-            horseId: String(history.horse?.id ?? ''),
-            tipo: history.tipo ?? 'VACUNA',
-            descripcion: history.descripcion ?? '',
-            fecha: history.fecha ?? '',
-            responsable: history.responsable ?? '',
+            horseId:
+                String(
+                    history.horse?.id ?? '',
+                ),
+
+            tipo:
+                history.tipo ?? 'VACUNA',
+
+            descripcion:
+                history.descripcion ?? '',
+
+            fecha:
+                history.fecha ?? '',
+
+            fechaProxima:
+                history.fechaProxima ?? '',
+
+            fechaVencimiento:
+                history.fechaVencimiento ?? '',
+
+            responsable:
+                history.responsable ?? '',
         });
 
         setEditingId(history.id);
         setShowForm(true);
         setError('');
+        setMessage('');
+
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth',
+        });
     };
 
     const handleSubmit = async (event) => {
@@ -246,7 +347,54 @@ function MedicalHistoryPage() {
             || !form.fecha
             || !form.responsable.trim()
         ) {
-            setError('Todos los campos son obligatorios.');
+            setError(
+                'Todos los campos son obligatorios.',
+            );
+
+            return;
+        }
+
+        if (
+            form.tipo === 'VACUNA'
+            && !form.fechaProxima
+        ) {
+            setError(
+                'La fecha de próxima vacunación es obligatoria.',
+            );
+
+            return;
+        }
+
+        if (
+            form.tipo === 'TRATAMIENTO'
+            && !form.fechaVencimiento
+        ) {
+            setError(
+                'La fecha de vencimiento del tratamiento es obligatoria.',
+            );
+
+            return;
+        }
+
+        if (
+            form.fechaProxima
+            && form.fechaProxima < form.fecha
+        ) {
+            setError(
+                'La próxima vacunación no puede ser anterior a la fecha del registro.',
+            );
+
+            return;
+        }
+
+        if (
+            form.fechaVencimiento
+            && form.fechaVencimiento < form.fecha
+        ) {
+            setError(
+                'El vencimiento no puede ser anterior a la fecha del registro.',
+            );
+
             return;
         }
 
@@ -254,28 +402,62 @@ function MedicalHistoryPage() {
             horse: {
                 id: Number(form.horseId),
             },
+
             tipo: form.tipo,
-            descripcion: form.descripcion.trim(),
+
+            descripcion:
+                form.descripcion.trim(),
+
             fecha: form.fecha,
-            responsable: form.responsable.trim(),
+
+            fechaProxima:
+                form.tipo === 'VACUNA'
+                    ? form.fechaProxima
+                    : null,
+
+            fechaVencimiento:
+                form.tipo === 'TRATAMIENTO'
+                    ? form.fechaVencimiento
+                    : null,
+
+            responsable:
+                form.responsable.trim(),
         };
 
         try {
             setSaving(true);
             setError('');
+            setMessage('');
 
             if (editingId) {
                 await medicalHistoryService.update(
                     editingId,
                     medicalHistoryData,
                 );
+
+                setMessage(
+                    'Registro médico actualizado correctamente.',
+                );
             } else {
                 await medicalHistoryService.create(
                     medicalHistoryData,
                 );
+
+                setMessage(
+                    'Registro médico guardado correctamente.',
+                );
             }
 
-            resetForm();
+            window.dispatchEvent(
+                new CustomEvent(
+                    ALERTS_UPDATED_EVENT,
+                ),
+            );
+
+            setForm(initialForm);
+            setEditingId(null);
+            setShowForm(false);
+
             await loadData();
         } catch (requestError) {
             setError(
@@ -300,7 +482,22 @@ function MedicalHistoryPage() {
 
         try {
             setError('');
-            await medicalHistoryService.remove(history.id);
+            setMessage('');
+
+            await medicalHistoryService.remove(
+                history.id,
+            );
+
+            window.dispatchEvent(
+                new CustomEvent(
+                    ALERTS_UPDATED_EVENT,
+                ),
+            );
+
+            setMessage(
+                'Registro médico eliminado correctamente.',
+            );
+
             await loadData();
         } catch (requestError) {
             setError(
@@ -322,7 +519,9 @@ function MedicalHistoryPage() {
                         className="primary-button"
                         type="button"
                         onClick={openCreateForm}
-                        disabled={horses.length === 0}
+                        disabled={
+                            horses.length === 0
+                        }
                     >
                         <Plus size={19} />
                         Nuevo registro
@@ -330,17 +529,25 @@ function MedicalHistoryPage() {
                 )}
             />
 
+            {message && (
+                <div className="success-message">
+                    {message}
+                </div>
+            )}
+
             {error && (
                 <div className="error-message">
                     {error}
                 </div>
             )}
 
-            {horses.length === 0 && !loading && (
-                <div className="warning-message">
-                    Primero debés registrar al menos un caballo.
-                </div>
-            )}
+            {horses.length === 0
+                && !loading && (
+                    <div className="warning-message">
+                        Primero debés registrar al
+                        menos un caballo.
+                    </div>
+                )}
 
             {showForm && (
                 <section className="content-card form-card">
@@ -353,7 +560,8 @@ function MedicalHistoryPage() {
                             </h3>
 
                             <p>
-                                Seleccioná el caballo y completá la información
+                                Seleccioná el caballo
+                                y completá la información
                                 médica.
                             </p>
                         </div>
@@ -371,80 +579,177 @@ function MedicalHistoryPage() {
                     <form onSubmit={handleSubmit}>
                         <div className="form-grid">
                             <label className="form-field">
-                                <span>Caballo *</span>
+                                <span>
+                                    Caballo *
+                                </span>
 
                                 <select
                                     name="horseId"
-                                    value={form.horseId}
-                                    onChange={handleChange}
+                                    value={
+                                        form.horseId
+                                    }
+                                    onChange={
+                                        handleChange
+                                    }
                                     required
                                 >
                                     <option value="">
-                                        Seleccionar caballo
+                                        Seleccionar
+                                        caballo
                                     </option>
 
-                                    {horses.map((horse) => (
-                                        <option
-                                            key={horse.id}
-                                            value={horse.id}
-                                        >
-                                            {horse.nombre} - {horse.identificador}
-                                        </option>
-                                    ))}
+                                    {horses.map(
+                                        (horse) => (
+                                            <option
+                                                key={
+                                                    horse.id
+                                                }
+                                                value={
+                                                    horse.id
+                                                }
+                                            >
+                                                {
+                                                    horse.nombre
+                                                }
+                                                {' - '}
+                                                {
+                                                    horse.identificador
+                                                }
+                                            </option>
+                                        ),
+                                    )}
                                 </select>
                             </label>
 
                             <label className="form-field">
-                                <span>Tipo de registro *</span>
+                                <span>
+                                    Tipo de registro *
+                                </span>
 
                                 <select
                                     name="tipo"
                                     value={form.tipo}
-                                    onChange={handleChange}
+                                    onChange={
+                                        handleChange
+                                    }
                                     required
                                 >
-                                    {typeOptions.map((option) => (
-                                        <option
-                                            key={option.value}
-                                            value={option.value}
-                                        >
-                                            {option.label}
-                                        </option>
-                                    ))}
+                                    {typeOptions.map(
+                                        (option) => (
+                                            <option
+                                                key={
+                                                    option.value
+                                                }
+                                                value={
+                                                    option.value
+                                                }
+                                            >
+                                                {
+                                                    option.label
+                                                }
+                                            </option>
+                                        ),
+                                    )}
                                 </select>
                             </label>
 
                             <label className="form-field">
-                                <span>Fecha *</span>
+                                <span>
+                                    Fecha del registro *
+                                </span>
 
                                 <input
                                     name="fecha"
                                     type="date"
                                     value={form.fecha}
-                                    onChange={handleChange}
+                                    onChange={
+                                        handleChange
+                                    }
                                     required
                                 />
                             </label>
 
+                            {form.tipo === 'VACUNA' && (
+                                <label className="form-field">
+                                    <span>
+                                        Próxima vacunación *
+                                    </span>
+
+                                    <input
+                                        name="fechaProxima"
+                                        type="date"
+                                        value={
+                                            form.fechaProxima
+                                        }
+                                        min={
+                                            form.fecha
+                                            || undefined
+                                        }
+                                        onChange={
+                                            handleChange
+                                        }
+                                        required
+                                    />
+                                </label>
+                            )}
+
+                            {form.tipo
+                                === 'TRATAMIENTO' && (
+                                    <label className="form-field">
+                                    <span>
+                                        Vencimiento del
+                                        tratamiento *
+                                    </span>
+
+                                        <input
+                                            name="fechaVencimiento"
+                                            type="date"
+                                            value={
+                                                form.fechaVencimiento
+                                            }
+                                            min={
+                                                form.fecha
+                                                || undefined
+                                            }
+                                            onChange={
+                                                handleChange
+                                            }
+                                            required
+                                        />
+                                    </label>
+                                )}
+
                             <label className="form-field">
-                                <span>Responsable *</span>
+                                <span>
+                                    Responsable *
+                                </span>
 
                                 <input
                                     name="responsable"
-                                    value={form.responsable}
-                                    onChange={handleChange}
+                                    value={
+                                        form.responsable
+                                    }
+                                    onChange={
+                                        handleChange
+                                    }
                                     placeholder="Ejemplo: Dr. Carlos Pérez"
                                     required
                                 />
                             </label>
 
                             <label className="form-field form-field-full">
-                                <span>Descripción *</span>
+                                <span>
+                                    Descripción *
+                                </span>
 
                                 <textarea
                                     name="descripcion"
-                                    value={form.descripcion}
-                                    onChange={handleChange}
+                                    value={
+                                        form.descripcion
+                                    }
+                                    onChange={
+                                        handleChange
+                                    }
                                     placeholder="Describí la vacuna, tratamiento, alergia u observación."
                                     rows="4"
                                     required
@@ -480,12 +785,16 @@ function MedicalHistoryPage() {
             <section className="content-card filters-card">
                 <div className="filters-grid">
                     <label className="form-field">
-                        <span>Filtrar por caballo</span>
+                        <span>
+                            Filtrar por caballo
+                        </span>
 
                         <select
                             value={horseFilter}
                             onChange={(event) =>
-                                setHorseFilter(event.target.value)}
+                                setHorseFilter(
+                                    event.target.value,
+                                )}
                         >
                             <option value="TODOS">
                                 Todos los caballos
@@ -503,25 +812,35 @@ function MedicalHistoryPage() {
                     </label>
 
                     <label className="form-field">
-                        <span>Filtrar por tipo</span>
+                        <span>
+                            Filtrar por tipo
+                        </span>
 
                         <select
                             value={typeFilter}
                             onChange={(event) =>
-                                setTypeFilter(event.target.value)}
+                                setTypeFilter(
+                                    event.target.value,
+                                )}
                         >
                             <option value="TODOS">
                                 Todos los tipos
                             </option>
 
-                            {typeOptions.map((option) => (
-                                <option
-                                    key={option.value}
-                                    value={option.value}
-                                >
-                                    {option.label}
-                                </option>
-                            ))}
+                            {typeOptions.map(
+                                (option) => (
+                                    <option
+                                        key={
+                                            option.value
+                                        }
+                                        value={
+                                            option.value
+                                        }
+                                    >
+                                        {option.label}
+                                    </option>
+                                ),
+                            )}
                         </select>
                     </label>
 
@@ -534,7 +853,9 @@ function MedicalHistoryPage() {
                             <input
                                 value={search}
                                 onChange={(event) =>
-                                    setSearch(event.target.value)}
+                                    setSearch(
+                                        event.target.value,
+                                    )}
                                 placeholder="Descripción o responsable"
                             />
                         </div>
@@ -545,9 +866,13 @@ function MedicalHistoryPage() {
             <section className="content-card">
                 <div className="history-heading">
                     <div>
-                        <h3>Cronología médica</h3>
+                        <h3>
+                            Cronología médica
+                        </h3>
+
                         <p>
-                            Registros encontrados: {filteredHistories.length}
+                            Registros encontrados:{' '}
+                            {filteredHistories.length}
                         </p>
                     </div>
 
@@ -558,90 +883,164 @@ function MedicalHistoryPage() {
                     <div className="empty-state">
                         Cargando historial médico...
                     </div>
-                ) : filteredHistories.length === 0 ? (
+                ) : filteredHistories.length
+                === 0 ? (
                     <div className="empty-state">
-                        No hay registros médicos para mostrar.
+                        No hay registros médicos
+                        para mostrar.
                     </div>
                 ) : (
                     <div className="history-timeline">
-                        {filteredHistories.map((history) => {
-                            const config =
-                                typeConfig[history.tipo]
-                                || typeConfig.OBSERVACION;
+                        {filteredHistories.map(
+                            (history) => {
+                                const config =
+                                    typeConfig[
+                                        history.tipo
+                                        ]
+                                    || typeConfig
+                                        .OBSERVACION;
 
-                            const TypeIcon = config.icon;
+                                const TypeIcon =
+                                    config.icon;
 
-                            return (
-                                <article
-                                    className="history-item"
-                                    key={history.id}
-                                >
-                                    <div className="history-marker">
-                                        <TypeIcon size={21} />
-                                    </div>
+                                return (
+                                    <article
+                                        className="history-item"
+                                        key={history.id}
+                                    >
+                                        <div className="history-marker">
+                                            <TypeIcon
+                                                size={21}
+                                            />
+                                        </div>
 
-                                    <div className="history-content">
-                                        <div className="history-topline">
-                                            <div>
-                        <span
-                            className={`history-type-badge history-type-${history.tipo?.toLowerCase()}`}
-                        >
-                          {config.label}
-                        </span>
+                                        <div className="history-content">
+                                            <div className="history-topline">
+                                                <div>
+                                                    <span
+                                                        className={
+                                                            `history-type-badge history-type-${history.tipo?.toLowerCase()}`
+                                                        }
+                                                    >
+                                                        {
+                                                            config.label
+                                                        }
+                                                    </span>
 
-                                                <h4>
-                                                    {history.horse?.nombre
-                                                        || 'Caballo no disponible'}
-                                                </h4>
+                                                    <h4>
+                                                        {history
+                                                                .horse
+                                                                ?.nombre
+                                                            || 'Caballo no disponible'}
+                                                    </h4>
+                                                </div>
+
+                                                <div className="history-date">
+                                                    <CalendarDays
+                                                        size={17}
+                                                    />
+
+                                                    {formatDate(
+                                                        history.fecha,
+                                                    )}
+                                                </div>
                                             </div>
 
-                                            <div className="history-date">
-                                                <CalendarDays size={17} />
-                                                {formatDate(history.fecha)}
+                                            <p className="history-description">
+                                                {
+                                                    history.descripcion
+                                                }
+                                            </p>
+
+                                            <div className="history-meta">
+                                                <span>
+                                                    <strong>
+                                                        Identificador:
+                                                    </strong>{' '}
+
+                                                    {history
+                                                            .horse
+                                                            ?.identificador
+                                                        || 'N/D'}
+                                                </span>
+
+                                                <span>
+                                                    <strong>
+                                                        Responsable:
+                                                    </strong>{' '}
+
+                                                    {
+                                                        history.responsable
+                                                    }
+                                                </span>
+
+                                                {history.tipo
+                                                    === 'VACUNA'
+                                                    && history
+                                                        .fechaProxima && (
+                                                        <span>
+                                                        <strong>
+                                                            Próxima vacunación:
+                                                        </strong>{' '}
+
+                                                            {formatDate(
+                                                                history
+                                                                    .fechaProxima,
+                                                            )}
+                                                    </span>
+                                                    )}
+
+                                                {history.tipo
+                                                    === 'TRATAMIENTO'
+                                                    && history
+                                                        .fechaVencimiento && (
+                                                        <span>
+                                                        <strong>
+                                                            Vencimiento:
+                                                        </strong>{' '}
+
+                                                            {formatDate(
+                                                                history
+                                                                    .fechaVencimiento,
+                                                            )}
+                                                    </span>
+                                                    )}
                                             </div>
                                         </div>
 
-                                        <p className="history-description">
-                                            {history.descripcion}
-                                        </p>
+                                        <div className="history-actions">
+                                            <button
+                                                className="table-icon-button"
+                                                type="button"
+                                                onClick={() =>
+                                                    openEditForm(
+                                                        history,
+                                                    )}
+                                                aria-label="Editar registro"
+                                            >
+                                                <Pencil
+                                                    size={17}
+                                                />
+                                            </button>
 
-                                        <div className="history-meta">
-                      <span>
-                        <strong>Identificador:</strong>{' '}
-                          {history.horse?.identificador || 'N/D'}
-                      </span>
-
-                                            <span>
-                        <strong>Responsable:</strong>{' '}
-                                                {history.responsable}
-                      </span>
+                                            <button
+                                                className="table-icon-button danger"
+                                                type="button"
+                                                onClick={() =>
+                                                    handleDelete(
+                                                        history,
+                                                    )}
+                                                aria-label="Eliminar registro"
+                                            >
+                                                <Trash2
+                                                    size={17}
+                                                />
+                                            </button>
                                         </div>
-                                    </div>
-
-                                    <div className="history-actions">
-                                        <button
-                                            className="table-icon-button"
-                                            type="button"
-                                            onClick={() =>
-                                                openEditForm(history)}
-                                            aria-label="Editar registro"
-                                        >
-                                            <Pencil size={17} />
-                                        </button>
-
-                                        <button
-                                            className="table-icon-button danger"
-                                            type="button"
-                                            onClick={() =>
-                                                handleDelete(history)}
-                                            aria-label="Eliminar registro"
-                                        >
-                                            <Trash2 size={17} />
-                                        </button>
-                                    </div>
-                                </article>
-                            );
-                        })}
+                                    </article>
+                                );
+                            },
+                        )}
                     </div>
                 )}
             </section>
