@@ -1,235 +1,317 @@
-
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 const initialForm = {
-    tipo: 'VETERINARIO',
-    horseId: '',
-    fecha: '',
-    hora: '',
-    cliente: '',
-    observaciones: '',
-    cupoMaximo: 1,
+  tipo: 'VETERINARIO',
+  horseId: '',
+  fecha: '',
+  hora: '',
+  cliente: '',
+  observaciones: '',
+  cupoMaximo: 1,
 };
 
-function ReservationForm({ onSave, loading }) {
-    const [form, setForm] = useState(initialForm);
+function ReservationForm({
+  onSave,
+  loading,
+  reservationToEdit,
+  onCancelEdit,
+}) {
+  const [form, setForm] = useState(initialForm);
 
-    const handleChange = (event) => {
-        const { name, value } = event.target;
+  useEffect(() => {
+    if (!reservationToEdit) {
+      setForm(initialForm);
+      return;
+    }
 
-        setForm((currentForm) => ({
-            ...currentForm,
-            [name]: value,
-        }));
+    setForm({
+      tipo: reservationToEdit.tipo ?? 'VETERINARIO',
+      horseId: reservationToEdit.horse?.id ?? '',
+      fecha: reservationToEdit.fecha ?? '',
+      hora: reservationToEdit.hora?.slice(0, 5) ?? '',
+      cliente: reservationToEdit.cliente ?? '',
+      observaciones:
+        reservationToEdit.observaciones ?? '',
+      cupoMaximo:
+        reservationToEdit.cupoMaximo ?? 1,
+    });
+  }, [reservationToEdit]);
+
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+
+    setForm((currentForm) => ({
+      ...currentForm,
+      [name]: value,
+    }));
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+
+    const reservation = {
+      tipo: form.tipo,
+      fecha: form.fecha,
+      hora: form.hora,
+      cliente: form.cliente.trim(),
+      estado:
+        reservationToEdit?.estado ?? 'PROGRAMADA',
+      observaciones: form.observaciones.trim(),
+      cupoMaximo: Number(form.cupoMaximo),
+      cuposReservados:
+        reservationToEdit?.cuposReservados ?? 0,
     };
 
-    const handleSubmit = async (event) => {
-        event.preventDefault();
+    if (form.horseId) {
+      reservation.horse = {
+        id: Number(form.horseId),
+      };
+    }
 
-        const reservation = {
-            tipo: form.tipo,
-            fecha: form.fecha,
-            hora: form.hora,
-            cliente: form.cliente.trim(),
-            estado: 'PROGRAMADA',
-            observaciones: form.observaciones.trim(),
-            cupoMaximo: Number(form.cupoMaximo),
-            cuposReservados: 0,
-        };
+    const saved = await onSave(reservation);
 
-        if (form.horseId) {
-            reservation.horse = {
-                id: Number(form.horseId),
-            };
-        }
+    if (saved) {
+      setForm(initialForm);
+    }
+  };
 
-        const saved = await onSave(reservation);
+  const handleCancelEdit = () => {
+    setForm(initialForm);
 
-        if (saved) {
-            setForm(initialForm);
-        }
-    };
+    if (onCancelEdit) {
+      onCancelEdit();
+    }
+  };
 
-    return (
-        <section style={styles.section}>
-            <h2 style={styles.title}>Registrar reserva</h2>
+  return (
+    <section style={styles.section}>
+      <div style={styles.header}>
+        <h2 style={styles.title}>
+          {reservationToEdit
+            ? `Editar reserva #${reservationToEdit.id}`
+            : 'Registrar reserva'}
+        </h2>
 
-            <form onSubmit={handleSubmit} style={styles.form}>
-                <label style={styles.field}>
-                    <span>Tipo de reserva</span>
+        {reservationToEdit && (
+          <button
+            type="button"
+            onClick={handleCancelEdit}
+            style={styles.cancelEditButton}
+          >
+            Cancelar edición
+          </button>
+        )}
+      </div>
 
-                    <select
-                        name="tipo"
-                        value={form.tipo}
-                        onChange={handleChange}
-                        style={styles.input}
-                    >
-                        <option value="VETERINARIO">
-                            Veterinario
-                        </option>
+      <form
+        onSubmit={handleSubmit}
+        style={styles.form}
+      >
+        <label style={styles.field}>
+          <span>Tipo de reserva</span>
 
-                        <option value="MONTA">Monta</option>
+          <select
+            name="tipo"
+            value={form.tipo}
+            onChange={handleChange}
+            style={styles.input}
+          >
+            <option value="VETERINARIO">
+              Veterinario
+            </option>
 
-                        <option value="PASEO">Paseo</option>
+            <option value="MONTA">
+              Monta
+            </option>
 
-                        <option value="ENTRENAMIENTO">
-                            Entrenamiento
-                        </option>
-                    </select>
-                </label>
+            <option value="PASEO">
+              Paseo
+            </option>
 
-                <label style={styles.field}>
-                    <span>ID del caballo</span>
+            <option value="ENTRENAMIENTO">
+              Entrenamiento
+            </option>
+          </select>
+        </label>
 
-                    <input
-                        type="number"
-                        name="horseId"
-                        value={form.horseId}
-                        onChange={handleChange}
-                        min="1"
-                        placeholder="Opcional"
-                        style={styles.input}
-                    />
-                </label>
+        <label style={styles.field}>
+          <span>ID del caballo</span>
 
-                <label style={styles.field}>
-                    <span>Fecha</span>
+          <input
+            type="number"
+            name="horseId"
+            value={form.horseId}
+            onChange={handleChange}
+            min="1"
+            placeholder="Opcional"
+            style={styles.input}
+          />
+        </label>
 
-                    <input
-                        type="date"
-                        name="fecha"
-                        value={form.fecha}
-                        onChange={handleChange}
-                        style={styles.input}
-                        required
-                    />
-                </label>
+        <label style={styles.field}>
+          <span>Fecha</span>
 
-                <label style={styles.field}>
-                    <span>Hora</span>
+          <input
+            type="date"
+            name="fecha"
+            value={form.fecha}
+            onChange={handleChange}
+            style={styles.input}
+            required
+          />
+        </label>
 
-                    <input
-                        type="time"
-                        name="hora"
-                        value={form.hora}
-                        onChange={handleChange}
-                        style={styles.input}
-                        required
-                    />
-                </label>
+        <label style={styles.field}>
+          <span>Hora</span>
 
-                <label style={styles.field}>
-                    <span>Cliente o responsable</span>
+          <input
+            type="time"
+            name="hora"
+            value={form.hora}
+            onChange={handleChange}
+            style={styles.input}
+            required
+          />
+        </label>
 
-                    <input
-                        type="text"
-                        name="cliente"
-                        value={form.cliente}
-                        onChange={handleChange}
-                        placeholder="Nombre completo"
-                        style={styles.input}
-                        required
-                    />
-                </label>
+        <label style={styles.field}>
+          <span>Cliente o responsable</span>
 
-                <label style={styles.field}>
-                    <span>Cupo máximo</span>
+          <input
+            type="text"
+            name="cliente"
+            value={form.cliente}
+            onChange={handleChange}
+            placeholder="Nombre completo"
+            style={styles.input}
+            required
+          />
+        </label>
 
-                    <input
-                        type="number"
-                        name="cupoMaximo"
-                        value={form.cupoMaximo}
-                        onChange={handleChange}
-                        min="1"
-                        style={styles.input}
-                        required
-                    />
-                </label>
+        <label style={styles.field}>
+          <span>Cupo máximo</span>
 
-                <label style={styles.observations}>
-                    <span>Observaciones</span>
+          <input
+            type="number"
+            name="cupoMaximo"
+            value={form.cupoMaximo}
+            onChange={handleChange}
+            min="1"
+            style={styles.input}
+            required
+          />
+        </label>
 
-                    <textarea
-                        name="observaciones"
-                        value={form.observaciones}
-                        onChange={handleChange}
-                        rows="3"
-                        placeholder="Información adicional"
-                        style={styles.input}
-                    />
-                </label>
+        <label style={styles.observations}>
+          <span>Observaciones</span>
 
-                <div style={styles.actions}>
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        style={styles.button}
-                    >
-                        {loading
-                            ? 'Guardando...'
-                            : 'Registrar reserva'}
-                    </button>
-                </div>
-            </form>
-        </section>
-    );
+          <textarea
+            name="observaciones"
+            value={form.observaciones}
+            onChange={handleChange}
+            rows="3"
+            placeholder="Información adicional"
+            style={styles.input}
+          />
+        </label>
+
+        <div style={styles.actions}>
+          <button
+            type="submit"
+            disabled={loading}
+            style={{
+              ...styles.button,
+              opacity: loading ? 0.7 : 1,
+              cursor: loading
+                ? 'not-allowed'
+                : 'pointer',
+            }}
+          >
+            {loading
+              ? 'Guardando...'
+              : reservationToEdit
+                ? 'Guardar cambios'
+                : 'Registrar reserva'}
+          </button>
+        </div>
+      </form>
+    </section>
+  );
 }
 
 const styles = {
-    section: {
-        marginBottom: '30px',
-    },
+  section: {
+    marginBottom: '30px',
+  },
 
-    title: {
-        marginTop: 0,
-        marginBottom: '18px',
-        fontSize: '20px',
-    },
+  header: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: '12px',
+    marginBottom: '18px',
+    flexWrap: 'wrap',
+  },
 
-    form: {
-        display: 'grid',
-        gridTemplateColumns:
-            'repeat(auto-fit, minmax(210px, 1fr))',
-        gap: '16px',
-    },
+  title: {
+    margin: 0,
+    fontSize: '20px',
+  },
 
-    field: {
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '7px',
-        fontWeight: 600,
-    },
+  form: {
+    display: 'grid',
+    gridTemplateColumns:
+      'repeat(auto-fit, minmax(210px, 1fr))',
+    gap: '16px',
+  },
 
-    observations: {
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '7px',
-        fontWeight: 600,
-        gridColumn: '1 / -1',
-    },
+  field: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '7px',
+    fontWeight: 600,
+  },
 
-    input: {
-        width: '100%',
-        padding: '11px 12px',
-        border: '1px solid #d4ddd8',
-        borderRadius: '8px',
-        backgroundColor: '#ffffff',
-        font: 'inherit',
-    },
+  observations: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '7px',
+    fontWeight: 600,
+    gridColumn: '1 / -1',
+  },
 
-    actions: {
-        gridColumn: '1 / -1',
-    },
+  input: {
+    width: '100%',
+    padding: '11px 12px',
+    border: '1px solid #d4ddd8',
+    borderRadius: '8px',
+    backgroundColor: '#ffffff',
+    font: 'inherit',
+  },
 
-    button: {
-        padding: '11px 18px',
-        border: 'none',
-        borderRadius: '8px',
-        backgroundColor: '#164c3d',
-        color: '#ffffff',
-        fontWeight: 700,
-        cursor: 'pointer',
-    },
+  actions: {
+    gridColumn: '1 / -1',
+  },
+
+  button: {
+    padding: '11px 18px',
+    border: 'none',
+    borderRadius: '8px',
+    backgroundColor: '#164c3d',
+    color: '#ffffff',
+    fontWeight: 700,
+  },
+
+  cancelEditButton: {
+    padding: '9px 14px',
+    border: '1px solid #b8c6c0',
+    borderRadius: '8px',
+    backgroundColor: '#ffffff',
+    color: '#183a31',
+    fontWeight: 700,
+    cursor: 'pointer',
+  },
 };
 
 export default ReservationForm;
+
