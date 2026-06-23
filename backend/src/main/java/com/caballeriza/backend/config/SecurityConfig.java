@@ -1,23 +1,27 @@
 package com.caballeriza.backend.config;
 
-import com.caballeriza.backend.security.*;
+import com.caballeriza.backend.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.annotation.*;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
-import org.springframework.security.authentication.*;
-import org.springframework.security.authentication.dao.*;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.*;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.web.*;
+import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.web.cors.*;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
 
@@ -38,130 +42,205 @@ public class SecurityConfig {
 
         return http
                 .csrf(AbstractHttpConfigurer::disable)
+
                 .cors(cors -> cors.configurationSource(
                         corsConfigurationSource()
                 ))
+
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(
                                 SessionCreationPolicy.STATELESS
                         )
                 )
+
                 .exceptionHandling(exception -> exception
+
                         .authenticationEntryPoint(
                                 (request, response, authException) -> {
                                     response.setStatus(401);
                                     response.setContentType(
                                             "application/json"
                                     );
+
                                     response.getWriter().write(
                                             "{\"error\":\"No autenticado\"}"
                                     );
                                 }
                         )
+
                         .accessDeniedHandler(
                                 (request, response, accessDeniedException) -> {
                                     response.setStatus(403);
                                     response.setContentType(
                                             "application/json"
                                     );
+
                                     response.getWriter().write(
                                             "{\"error\":\"Acceso denegado\"}"
                                     );
                                 }
                         )
                 )
+
                 .authorizeHttpRequests(auth -> auth
 
+                        /*
+                         * Solicitudes necesarias para CORS.
+                         */
                         .requestMatchers(
                                 HttpMethod.OPTIONS,
                                 "/**"
                         ).permitAll()
 
+                        /*
+                         * Swagger y documentación de la API.
+                         */
+                        .requestMatchers(
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+                                "/v3/api-docs/**"
+                        ).permitAll()
+
+                        /*
+                         * Registro e inicio de sesión.
+                         */
                         .requestMatchers(
                                 HttpMethod.POST,
                                 "/api/auth/register",
                                 "/api/auth/login"
                         ).permitAll()
 
-                        .requestMatchers("/error").permitAll()
+                        .requestMatchers(
+                                "/error"
+                        ).permitAll()
 
+                        /*
+                         * Solo el administrador puede eliminar
+                         * registros de la API.
+                         */
                         .requestMatchers(
                                 HttpMethod.DELETE,
                                 "/api/**"
                         ).hasRole("ADMINISTRADOR")
 
-                        .requestMatchers("/api/users/**")
-                        .hasRole("ADMINISTRADOR")
+                        /*
+                         * Administración de usuarios.
+                         */
+                        .requestMatchers(
+                                "/api/users/**"
+                        ).hasRole("ADMINISTRADOR")
 
-                        .requestMatchers("/api/employees/**")
-                        .hasRole("ADMINISTRADOR")
+                        /*
+                         * Administración de empleados.
+                         */
+                        .requestMatchers(
+                                "/api/employees/**"
+                        ).hasRole("ADMINISTRADOR")
 
-                        .requestMatchers("/api/medical-history/**")
-                        .hasAnyRole(
+                        /*
+                         * Historial médico.
+                         */
+                        .requestMatchers(
+                                "/api/medical-history/**"
+                        ).hasAnyRole(
                                 "ADMINISTRADOR",
                                 "VETERINARIO"
                         )
 
+                        /*
+                         * Turnos y tareas.
+                         */
                         .requestMatchers(
                                 "/api/shifts/**",
                                 "/api/tasks/**"
-                        )
-                        .hasAnyRole(
+                        ).hasAnyRole(
                                 "ADMINISTRADOR",
                                 "CUIDADOR"
                         )
 
+                        /*
+                         * Alimentación, inventario,
+                         * suministros y alertas.
+                         */
                         .requestMatchers(
                                 "/api/inventory/**",
                                 "/api/feeding-plans/**",
                                 "/api/supply-records/**",
                                 "/api/alerts/**"
-                        )
-                        .hasAnyRole(
+                        ).hasAnyRole(
                                 "ADMINISTRADOR",
                                 "CUIDADOR",
                                 "VETERINARIO"
                         )
 
+                        /*
+                         * Todos los usuarios autenticados
+                         * pueden consultar caballos y reservas.
+                         */
                         .requestMatchers(
                                 HttpMethod.GET,
                                 "/api/horses/**",
                                 "/api/reservations/**"
-                        )
-                        .authenticated()
+                        ).authenticated()
 
-                        .requestMatchers("/api/horses/**")
-                        .hasAnyRole(
+                        /*
+                         * Administración de caballos.
+                         */
+                        .requestMatchers(
+                                "/api/horses/**"
+                        ).hasAnyRole(
                                 "ADMINISTRADOR",
                                 "CUIDADOR",
                                 "VETERINARIO"
                         )
 
+                        /*
+                         * Creación de reservas.
+                         */
                         .requestMatchers(
                                 HttpMethod.POST,
                                 "/api/reservations/**"
-                        )
-                        .hasAnyRole(
+                        ).hasAnyRole(
                                 "ADMINISTRADOR",
                                 "CUIDADOR",
                                 "CLIENTE"
                         )
 
-                        .requestMatchers("/api/reservations/**")
-                        .hasAnyRole(
+                        /*
+                         * Modificación y administración
+                         * de reservas.
+                         */
+                        .requestMatchers(
+                                "/api/reservations/**"
+                        ).hasAnyRole(
                                 "ADMINISTRADOR",
                                 "CUIDADOR"
                         )
 
+                        /*
+                         * Cualquier otra ruta requiere
+                         * autenticación.
+                         */
                         .anyRequest().authenticated()
                 )
-                .authenticationProvider(authenticationProvider)
+
+                .authenticationProvider(
+                        authenticationProvider
+                )
+
                 .addFilterBefore(
                         jwtAuthenticationFilter,
                         UsernamePasswordAuthenticationFilter.class
                 )
-                .formLogin(AbstractHttpConfigurer::disable)
-                .httpBasic(AbstractHttpConfigurer::disable)
+
+                .formLogin(
+                        AbstractHttpConfigurer::disable
+                )
+
+                .httpBasic(
+                        AbstractHttpConfigurer::disable
+                )
+
                 .build();
     }
 
@@ -179,7 +258,9 @@ public class SecurityConfig {
                         userDetailsService
                 );
 
-        provider.setPasswordEncoder(passwordEncoder);
+        provider.setPasswordEncoder(
+                passwordEncoder
+        );
 
         return provider;
     }
@@ -188,7 +269,8 @@ public class SecurityConfig {
     public AuthenticationManager authenticationManager(
             AuthenticationConfiguration configuration
     ) throws Exception {
-        return configuration.getAuthenticationManager();
+        return configuration
+                .getAuthenticationManager();
     }
 
     @Bean
@@ -196,20 +278,26 @@ public class SecurityConfig {
         CorsConfiguration configuration =
                 new CorsConfiguration();
 
-        configuration.setAllowedOriginPatterns(List.of(
-                "http://localhost:*",
-                "http://127.0.0.1:*"
-        ));
+        configuration.setAllowedOriginPatterns(
+                List.of(
+                        "http://localhost:*",
+                        "http://127.0.0.1:*"
+                )
+        );
 
-        configuration.setAllowedMethods(List.of(
-                "GET",
-                "POST",
-                "PUT",
-                "DELETE",
-                "OPTIONS"
-        ));
+        configuration.setAllowedMethods(
+                List.of(
+                        "GET",
+                        "POST",
+                        "PUT",
+                        "DELETE",
+                        "OPTIONS"
+                )
+        );
 
-        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setAllowedHeaders(
+                List.of("*")
+        );
 
         UrlBasedCorsConfigurationSource source =
                 new UrlBasedCorsConfigurationSource();
