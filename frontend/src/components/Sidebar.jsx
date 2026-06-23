@@ -28,53 +28,90 @@ const menuItems = [
         path: '/caballos',
         label: 'Caballos',
         icon: PawPrint,
+        roles: [
+            'ADMINISTRADOR',
+            'CUIDADOR',
+            'VETERINARIO',
+        ],
     },
     {
         path: '/historial-medico',
         label: 'Historial médico',
         icon: HeartPulse,
+        roles: [
+            'ADMINISTRADOR',
+            'VETERINARIO',
+        ],
     },
     {
         path: '/alimentacion',
         label: 'Alimentación',
         icon: Utensils,
+        roles: [
+            'ADMINISTRADOR',
+            'CUIDADOR',
+            'VETERINARIO',
+        ],
     },
     {
         path: '/suministros',
         label: 'Suministros',
         icon: PackageOpen,
+        roles: [
+            'ADMINISTRADOR',
+            'CUIDADOR',
+            'VETERINARIO',
+        ],
     },
     {
         path: '/inventario',
         label: 'Inventario',
         icon: Boxes,
+        roles: [
+            'ADMINISTRADOR',
+            'CUIDADOR',
+            'VETERINARIO',
+        ],
     },
     {
         path: '/alertas',
         label: 'Alertas',
         icon: Bell,
+        roles: [
+            'ADMINISTRADOR',
+            'CUIDADOR',
+            'VETERINARIO',
+        ],
     },
-
-    // Módulos de Josué
     {
         path: '/usuarios',
         label: 'Usuarios y roles',
         icon: Users,
+        roles: ['ADMINISTRADOR'],
     },
     {
         path: '/empleados',
         label: 'Empleados',
         icon: UserCog,
+        roles: ['ADMINISTRADOR'],
     },
     {
         path: '/turnos',
         label: 'Turnos',
         icon: Clock3,
+        roles: [
+            'ADMINISTRADOR',
+            'CUIDADOR',
+        ],
     },
     {
         path: '/tareas',
         label: 'Tareas',
         icon: ClipboardCheck,
+        roles: [
+            'ADMINISTRADOR',
+            'CUIDADOR',
+        ],
     },
     {
         path: '/reservas',
@@ -88,16 +125,38 @@ const menuItems = [
     },
 ];
 
-function Sidebar({ open, onToggle }) {
+function Sidebar({
+                     open,
+                     onToggle,
+                     user,
+                 }) {
+    const visibleItems = menuItems.filter(
+        (item) => {
+            if (!item.roles) {
+                return true;
+            }
+
+            return item.roles.includes(user?.rol);
+        },
+    );
+
     return (
         <>
             <button
                 className="mobile-menu-button"
                 type="button"
                 onClick={onToggle}
-                aria-label={open ? 'Cerrar menú' : 'Abrir menú'}
+                aria-label={
+                    open
+                        ? 'Cerrar menú'
+                        : 'Abrir menú'
+                }
             >
-                {open ? <X size={22} /> : <Menu size={22} />}
+                {open ? (
+                    <X size={22} />
+                ) : (
+                    <Menu size={22} />
+                )}
             </button>
 
             {open && (
@@ -109,7 +168,13 @@ function Sidebar({ open, onToggle }) {
                 />
             )}
 
-            <aside className={`sidebar ${open ? 'sidebar-open' : ''}`}>
+            <aside
+                className={
+                    `sidebar ${
+                        open ? 'sidebar-open' : ''
+                    }`
+                }
+            >
                 <div className="sidebar-brand">
                     <div className="brand-icon">
                         <PawPrint size={25} />
@@ -122,24 +187,39 @@ function Sidebar({ open, onToggle }) {
                 </div>
 
                 <nav className="sidebar-nav">
-                    {menuItems.map(({ path, label, icon: Icon }) => (
-                        <NavLink
-                            key={path}
-                            to={path}
-                            end={path === '/'}
-                            className={({ isActive }) =>
-                                `sidebar-link ${isActive ? 'sidebar-link-active' : ''}`
-                            }
-                            onClick={() => {
-                                if (window.innerWidth <= 900) {
-                                    onToggle();
+                    {visibleItems.map(
+                        ({
+                             path,
+                             label,
+                             icon: Icon,
+                         }) => (
+                            <NavLink
+                                key={path}
+                                to={path}
+                                end={path === '/'}
+                                className={({
+                                                isActive,
+                                            }) =>
+                                    `sidebar-link ${
+                                        isActive
+                                            ? 'sidebar-link-active'
+                                            : ''
+                                    }`
                                 }
-                            }}
-                        >
-                            <Icon size={20} />
-                            <span>{label}</span>
-                        </NavLink>
-                    ))}
+                                onClick={() => {
+                                    if (
+                                        window.innerWidth
+                                        <= 900
+                                    ) {
+                                        onToggle();
+                                    }
+                                }}
+                            >
+                                <Icon size={20} />
+                                <span>{label}</span>
+                            </NavLink>
+                        ),
+                    )}
                 </nav>
 
                 <footer className="sidebar-footer">

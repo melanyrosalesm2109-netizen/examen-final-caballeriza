@@ -1,5 +1,10 @@
-import { Route, Routes } from 'react-router';
+import {
+    Navigate,
+    Route,
+    Routes,
+} from 'react-router';
 
+import ProtectedRoute from './components/ProtectedRoute';
 import MainLayout from './layouts/MainLayout';
 import AlertsPage from './pages/AlertsPage';
 import CalendarPage from './pages/CalendarPage';
@@ -8,7 +13,9 @@ import EmployeesPage from './pages/EmployeesPage';
 import FeedingPlansPage from './pages/FeedingPlansPage';
 import HorsesPage from './pages/HorsesPage';
 import InventoryPage from './pages/InventoryPage';
+import LoginPage from './pages/LoginPage';
 import MedicalHistoryPage from './pages/MedicalHistoryPage';
+import RegisterPage from './pages/RegisterPage';
 import ReservationsPage from './pages/ReservationsPage';
 import ShiftsPage from './pages/ShiftsPage';
 import SupplyRecordsPage from './pages/SupplyRecordsPage';
@@ -18,69 +25,89 @@ import UsersPage from './pages/UsersPage';
 function App() {
     return (
         <Routes>
-            <Route element={<MainLayout />}>
-                <Route index element={<Dashboard />} />
+            <Route
+                path="/login"
+                element={<LoginPage />}
+            />
 
-                <Route
-                    path="caballos"
-                    element={<HorsesPage />}
-                />
+            <Route
+                path="/registro"
+                element={<RegisterPage />}
+            />
 
-                <Route
-                    path="historial-medico"
-                    element={<MedicalHistoryPage />}
-                />
+            <Route element={<ProtectedRoute />}>
+                <Route element={<MainLayout />}>
+                    <Route
+                        index
+                        element={<Dashboard />}
+                    />
 
-                <Route
-                    path="alimentacion"
-                    element={<FeedingPlansPage />}
-                />
+                    <Route
+                        path="caballos"
+                        element={<HorsesPage />}
+                    />
 
-                <Route
-                    path="suministros"
-                    element={<SupplyRecordsPage />}
-                />
+                    <Route
+                        path="historial-medico"
+                        element={<MedicalHistoryPage />}
+                    />
 
-                <Route
-                    path="inventario"
-                    element={<InventoryPage />}
-                />
+                    <Route
+                        path="alimentacion"
+                        element={<FeedingPlansPage />}
+                    />
 
-                <Route
-                    path="alertas"
-                    element={<AlertsPage />}
-                />
+                    <Route
+                        path="suministros"
+                        element={<SupplyRecordsPage />}
+                    />
 
-                <Route
-                    path="usuarios"
-                    element={<UsersPage />}
-                />
+                    <Route
+                        path="inventario"
+                        element={<InventoryPage />}
+                    />
 
-                <Route
-                    path="empleados"
-                    element={<EmployeesPage />}
-                />
+                    <Route
+                        path="alertas"
+                        element={<AlertsPage />}
+                    />
 
-                <Route
-                    path="turnos"
-                    element={<ShiftsPage />}
-                />
+                    <Route
+                        path="usuarios"
+                        element={<UsersPage />}
+                    />
 
-                <Route
-                    path="tareas"
-                    element={<TasksPage />}
-                />
+                    <Route
+                        path="empleados"
+                        element={<EmployeesPage />}
+                    />
 
-                <Route
-                    path="reservas"
-                    element={<ReservationsPage />}
-                />
+                    <Route
+                        path="turnos"
+                        element={<ShiftsPage />}
+                    />
 
-                <Route
-                    path="calendario"
-                    element={<CalendarPage />}
-                />
+                    <Route
+                        path="tareas"
+                        element={<TasksPage />}
+                    />
+
+                    <Route
+                        path="reservas"
+                        element={<ReservationsPage />}
+                    />
+
+                    <Route
+                        path="calendario"
+                        element={<CalendarPage />}
+                    />
+                </Route>
             </Route>
+
+            <Route
+                path="*"
+                element={<Navigate to="/" replace />}
+            />
         </Routes>
     );
 }
