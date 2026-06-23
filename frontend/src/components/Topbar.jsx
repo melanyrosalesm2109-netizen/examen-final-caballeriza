@@ -3,8 +3,15 @@ import {
     CircleUserRound,
     LogOut,
 } from 'lucide-react';
+import {
+    useEffect,
+    useState,
+} from 'react';
 import { useNavigate } from 'react-router';
 
+import alertService, {
+    ALERTS_UPDATED_EVENT,
+} from '../services/alertService';
 import authService from '../services/authService';
 
 function formatRole(role) {
@@ -23,12 +30,50 @@ function formatRole(role) {
 
 function Topbar({ user }) {
     const navigate = useNavigate();
+    const [unreadCount, setUnreadCount] =
+        useState(0);
 
     const canSeeAlerts = [
         'ADMINISTRADOR',
         'CUIDADOR',
         'VETERINARIO',
     ].includes(user?.rol);
+
+    const loadUnreadCount = async () => {
+        if (!canSeeAlerts) {
+            setUnreadCount(0);
+            return;
+        }
+
+        try {
+            const data =
+                await alertService.getUnread();
+
+            setUnreadCount(
+                Array.isArray(data)
+                    ? data.length
+                    : 0,
+            );
+        } catch {
+            setUnreadCount(0);
+        }
+    };
+
+    useEffect(() => {
+        loadUnreadCount();
+
+        window.addEventListener(
+            ALERTS_UPDATED_EVENT,
+            loadUnreadCount,
+        );
+
+        return () => {
+            window.removeEventListener(
+                ALERTS_UPDATED_EVENT,
+                loadUnreadCount,
+            );
+        };
+    }, [user?.rol]);
 
     const handleLogout = () => {
         authService.logout();
@@ -42,7 +87,9 @@ function Topbar({ user }) {
         <header className="topbar">
             <div className="topbar-title">
                 <h1>Sistema de Caballeriza</h1>
-                <p>Administración y seguimiento general</p>
+                <p>
+                    Administración y seguimiento general
+                </p>
             </div>
 
             <div className="topbar-actions">
@@ -50,11 +97,19 @@ function Topbar({ user }) {
                     <button
                         type="button"
                         className="icon-button"
-                        onClick={() => navigate('/alertas')}
+                        onClick={() =>
+                            navigate('/alertas')}
                         aria-label="Ver notificaciones"
                     >
                         <Bell size={21} />
-                        <span className="notification-dot" />
+
+                        {unreadCount > 0 && (
+                            <span className="notification-count">
+                                {unreadCount > 99
+                                    ? '99+'
+                                    : unreadCount}
+                            </span>
+                        )}
                     </button>
                 )}
 
