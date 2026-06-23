@@ -1,14 +1,21 @@
 import {
     Bell,
     Boxes,
+    CalendarCheck,
+    CalendarDays,
+    ClipboardCheck,
+    Clock3,
     HeartPulse,
     LayoutDashboard,
     Menu,
     PackageOpen,
     PawPrint,
+    UserCog,
+    Users,
     Utensils,
     X,
 } from 'lucide-react';
+
 import { NavLink } from 'react-router';
 
 const menuItems = [
@@ -46,6 +53,38 @@ const menuItems = [
         path: '/alertas',
         label: 'Alertas',
         icon: Bell,
+    },
+
+    // Módulos de Josué
+    {
+        path: '/usuarios',
+        label: 'Usuarios y roles',
+        icon: Users,
+    },
+    {
+        path: '/empleados',
+        label: 'Empleados',
+        icon: UserCog,
+    },
+    {
+        path: '/turnos',
+        label: 'Turnos',
+        icon: Clock3,
+    },
+    {
+        path: '/tareas',
+        label: 'Tareas',
+        icon: ClipboardCheck,
+    },
+    {
+        path: '/reservas',
+        label: 'Reservas',
+        icon: CalendarCheck,
+    },
+    {
+        path: '/calendario',
+        label: 'Calendario',
+        icon: CalendarDays,
     },
 ];
 
