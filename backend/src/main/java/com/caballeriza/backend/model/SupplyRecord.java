@@ -33,7 +33,11 @@ public class SupplyRecord {
     @NotNull(message = "La fecha es obligatoria")
     private LocalDate fecha;
 
-    @DecimalMin(value = "0.1", message = "La cantidad debe ser mayor a cero")
+    @NotNull(message = "La cantidad es obligatoria")
+    @DecimalMin(
+            value = "0.1",
+            message = "La cantidad debe ser mayor a cero"
+    )
     private Double cantidad;
 
     private String responsable;
