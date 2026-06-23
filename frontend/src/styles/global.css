@@ -1935,3 +1935,70 @@ a {
         white-space: normal;
     }
 }
+.pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    margin-top: 20px;
+    padding-top: 18px;
+    border-top: 1px solid #e1e8e4;
+}
+
+.pagination-info {
+    color: #69776f;
+    font-size: 0.86rem;
+}
+
+.pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.pagination-button {
+    display: inline-flex;
+    min-height: 39px;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 13px;
+    border: 1px solid #d5dfd9;
+    border-radius: 9px;
+    background: #ffffff;
+    color: #27483a;
+    font-weight: 700;
+}
+
+.pagination-button:hover:not(:disabled) {
+    border-color: #28654f;
+    background: #edf5f1;
+}
+
+.pagination-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+}
+
+.pagination-page {
+    min-width: 105px;
+    color: #536159;
+    font-size: 0.86rem;
+    text-align: center;
+}
+
+@media (max-width: 700px) {
+    .pagination {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .pagination-info {
+        text-align: center;
+    }
+
+    .pagination-controls {
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+}

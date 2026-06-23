@@ -1,4 +1,12 @@
-import { useEffect, useState } from 'react';
+import {
+  ChevronLeft,
+  ChevronRight,
+} from 'lucide-react';
+import {
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 
 import ModulePage from '../components/ModulePage';
 import ReservationFilters from '../components/ReservationFilters';
@@ -14,24 +22,84 @@ import {
   updateReservation,
 } from '../services/reservationService';
 
+const PAGE_SIZE = 5;
+
 function ReservationsPage() {
   const [reservations, setReservations] = useState([]);
   const [reservationToEdit, setReservationToEdit] =
-    useState(null);
+      useState(null);
 
-  const [loadingList, setLoadingList] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [filtering, setFiltering] = useState(false);
-  const [processingId, setProcessingId] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
 
-  const [error, setError] = useState('');
-  const [message, setMessage] = useState('');
+  const [loadingList, setLoadingList] =
+      useState(false);
+
+  const [saving, setSaving] =
+      useState(false);
+
+  const [filtering, setFiltering] =
+      useState(false);
+
+  const [processingId, setProcessingId] =
+      useState(null);
+
+  const [error, setError] =
+      useState('');
+
+  const [message, setMessage] =
+      useState('');
+
+  const totalPages = Math.max(
+      1,
+      Math.ceil(
+          reservations.length / PAGE_SIZE,
+      ),
+  );
+
+  const startIndex =
+      (currentPage - 1) * PAGE_SIZE;
+
+  const endIndex =
+      startIndex + PAGE_SIZE;
+
+  const paginatedReservations = useMemo(
+      () =>
+          reservations.slice(
+              startIndex,
+              endIndex,
+          ),
+      [
+        reservations,
+        startIndex,
+        endIndex,
+      ],
+  );
+
+  const firstVisibleRecord =
+      reservations.length === 0
+          ? 0
+          : startIndex + 1;
+
+  const lastVisibleRecord = Math.min(
+      endIndex,
+      reservations.length,
+  );
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [
+    currentPage,
+    totalPages,
+  ]);
 
   const getErrorMessage = (
-    requestError,
-    defaultMessage,
+      requestError,
+      defaultMessage,
   ) => {
-    const responseData = requestError.response?.data;
+    const responseData =
+        requestError.response?.data;
 
     if (typeof responseData === 'string') {
       return responseData;
@@ -56,16 +124,19 @@ function ReservationsPage() {
       const data = await getReservations();
 
       setReservations(
-        Array.isArray(data) ? data : [],
+          Array.isArray(data) ? data : [],
       );
+
+      setCurrentPage(1);
     } catch (requestError) {
       setReservations([]);
+      setCurrentPage(1);
 
       setError(
-        getErrorMessage(
-          requestError,
-          'No se pudo cargar la lista de reservas.',
-        ),
+          getErrorMessage(
+              requestError,
+              'No se pudo cargar la lista de reservas.',
+          ),
       );
     } finally {
       setLoadingList(false);
@@ -84,33 +155,34 @@ function ReservationsPage() {
 
       if (reservationToEdit) {
         await updateReservation(
-          reservationToEdit.id,
-          reservation,
+            reservationToEdit.id,
+            reservation,
         );
 
         setMessage(
-          'Reserva actualizada correctamente.',
+            'Reserva actualizada correctamente.',
         );
       } else {
         await createReservation(reservation);
 
         setMessage(
-          'Reserva registrada correctamente.',
+            'Reserva registrada correctamente.',
         );
       }
 
       setReservationToEdit(null);
+
       await loadReservations();
 
       return true;
     } catch (requestError) {
       setError(
-        getErrorMessage(
-          requestError,
-          reservationToEdit
-            ? 'No se pudo actualizar la reserva.'
-            : 'No se pudo registrar la reserva.',
-        ),
+          getErrorMessage(
+              requestError,
+              reservationToEdit
+                  ? 'No se pudo actualizar la reserva.'
+                  : 'No se pudo registrar la reserva.',
+          ),
       );
 
       return false;
@@ -125,21 +197,25 @@ function ReservationsPage() {
       setError('');
       setMessage('');
 
-      const data = await filterReservations(filters);
+      const data =
+          await filterReservations(filters);
 
       setReservations(
-        Array.isArray(data) ? data : [],
+          Array.isArray(data) ? data : [],
       );
+
+      setCurrentPage(1);
 
       return true;
     } catch (requestError) {
       setReservations([]);
+      setCurrentPage(1);
 
       setError(
-        getErrorMessage(
-          requestError,
-          'No se pudieron aplicar los filtros.',
-        ),
+          getErrorMessage(
+              requestError,
+              'No se pudieron aplicar los filtros.',
+          ),
       );
 
       return false;
@@ -151,6 +227,7 @@ function ReservationsPage() {
   const handleClearFilters = async () => {
     setMessage('');
     setError('');
+    setCurrentPage(1);
 
     await loadReservations();
   };
@@ -166,7 +243,9 @@ function ReservationsPage() {
     });
   };
 
-  const handleReserveSlot = async (reservation) => {
+  const handleReserveSlot = async (
+      reservation,
+  ) => {
     try {
       setProcessingId(reservation.id);
       setMessage('');
@@ -175,25 +254,27 @@ function ReservationsPage() {
       await reserveSlot(reservation.id);
 
       setMessage(
-        'Cupo reservado correctamente.',
+          'Cupo reservado correctamente.',
       );
 
       await loadReservations();
     } catch (requestError) {
       setError(
-        getErrorMessage(
-          requestError,
-          'No se pudo reservar el cupo.',
-        ),
+          getErrorMessage(
+              requestError,
+              'No se pudo reservar el cupo.',
+          ),
       );
     } finally {
       setProcessingId(null);
     }
   };
 
-  const handleCancel = async (reservation) => {
+  const handleCancel = async (
+      reservation,
+  ) => {
     const confirmed = window.confirm(
-      `¿Deseás cancelar la reserva #${reservation.id}?`,
+        `¿Deseás cancelar la reserva #${reservation.id}?`,
     );
 
     if (!confirmed) {
@@ -208,25 +289,27 @@ function ReservationsPage() {
       await cancelReservation(reservation.id);
 
       setMessage(
-        'Reserva cancelada correctamente.',
+          'Reserva cancelada correctamente.',
       );
 
       await loadReservations();
     } catch (requestError) {
       setError(
-        getErrorMessage(
-          requestError,
-          'No se pudo cancelar la reserva.',
-        ),
+          getErrorMessage(
+              requestError,
+              'No se pudo cancelar la reserva.',
+          ),
       );
     } finally {
       setProcessingId(null);
     }
   };
 
-  const handleDelete = async (reservation) => {
+  const handleDelete = async (
+      reservation,
+  ) => {
     const confirmed = window.confirm(
-      `¿Deseás eliminar definitivamente la reserva #${reservation.id}?`,
+        `¿Deseás eliminar definitivamente la reserva #${reservation.id}?`,
     );
 
     if (!confirmed) {
@@ -241,22 +324,23 @@ function ReservationsPage() {
       await deleteReservation(reservation.id);
 
       if (
-        reservationToEdit?.id === reservation.id
+          reservationToEdit?.id
+          === reservation.id
       ) {
         setReservationToEdit(null);
       }
 
       setMessage(
-        'Reserva eliminada correctamente.',
+          'Reserva eliminada correctamente.',
       );
 
       await loadReservations();
     } catch (requestError) {
       setError(
-        getErrorMessage(
-          requestError,
-          'No se pudo eliminar la reserva.',
-        ),
+          getErrorMessage(
+              requestError,
+              'No se pudo eliminar la reserva.',
+          ),
       );
     } finally {
       setProcessingId(null);
@@ -269,239 +353,420 @@ function ReservationsPage() {
     }
 
     return String(value)
-      .toLowerCase()
-      .replaceAll('_', ' ')
-      .replace(
-        /\b\w/g,
-        (letter) => letter.toUpperCase(),
-      );
+        .toLowerCase()
+        .replaceAll('_', ' ')
+        .replace(
+            /\b\w/g,
+            (letter) =>
+                letter.toUpperCase(),
+        );
+  };
+
+  const goToPreviousPage = () => {
+    setCurrentPage((page) =>
+        Math.max(1, page - 1),
+    );
+  };
+
+  const goToNextPage = () => {
+    setCurrentPage((page) =>
+        Math.min(
+            totalPages,
+            page + 1,
+        ),
+    );
   };
 
   return (
-    <ModulePage
-      title="Gestión de reservas"
-      description="Registro, consulta, filtros y administración de reservas."
-    >
-      {message && (
-        <div style={styles.success}>
-          {message}
-        </div>
-      )}
-
-      {error && (
-        <div style={styles.error}>
-          {error}
-        </div>
-      )}
-
-      <ReservationForm
-        onSave={handleSave}
-        loading={saving}
-        reservationToEdit={reservationToEdit}
-        onCancelEdit={() =>
-          setReservationToEdit(null)}
-      />
-
-      <ReservationFilters
-        onFilter={handleFilter}
-        onClear={handleClearFilters}
-        loading={filtering}
-      />
-
-      <div style={styles.header}>
-        <h2 style={styles.title}>
-          Reservas registradas
-        </h2>
-
-        <button
-          type="button"
-          onClick={loadReservations}
-          disabled={loadingList}
-          style={{
-            ...styles.button,
-            opacity: loadingList ? 0.7 : 1,
-            cursor: loadingList
-              ? 'not-allowed'
-              : 'pointer',
-          }}
-        >
-          {loadingList
-            ? 'Cargando...'
-            : 'Actualizar'}
-        </button>
-      </div>
-
-      {loadingList && (
-        <p>Cargando reservas...</p>
-      )}
-
-      {!loadingList
-        && reservations.length === 0 && (
-          <div className="empty-state">
-            No existen reservas para mostrar.
-          </div>
+      <ModulePage
+          title="Gestión de reservas"
+          description="Registro, consulta, filtros y administración de reservas."
+      >
+        {message && (
+            <div style={styles.success}>
+              {message}
+            </div>
         )}
 
-      {!loadingList
-        && reservations.length > 0 && (
-          <div style={styles.tableContainer}>
-            <table style={styles.table}>
-              <thead>
-                <tr>
-                  <th style={styles.cell}>ID</th>
-                  <th style={styles.cell}>Tipo</th>
-                  <th style={styles.cell}>Caballo</th>
-                  <th style={styles.cell}>Fecha</th>
-                  <th style={styles.cell}>Hora</th>
-                  <th style={styles.cell}>Cliente</th>
-                  <th style={styles.cell}>Estado</th>
-                  <th style={styles.cell}>Cupos</th>
-                  <th style={styles.cell}>Acciones</th>
-                </tr>
-              </thead>
+        {error && (
+            <div style={styles.error}>
+              {error}
+            </div>
+        )}
 
-              <tbody>
-                {reservations.map((reservation) => {
-                  const isCancelled =
-                    reservation.estado === 'CANCELADA';
+        <ReservationForm
+            onSave={handleSave}
+            loading={saving}
+            reservationToEdit={
+              reservationToEdit
+            }
+            onCancelEdit={() =>
+                setReservationToEdit(null)}
+        />
 
-                  const isCompleted =
-                    reservation.estado === 'COMPLETADA';
+        <ReservationFilters
+            onFilter={handleFilter}
+            onClear={handleClearFilters}
+            loading={filtering}
+        />
 
-                  const reservedSlots = Number(
-                    reservation.cuposReservados ?? 0,
-                  );
+        <div style={styles.header}>
+          <div>
+            <h2 style={styles.title}>
+              Reservas registradas
+            </h2>
 
-                  const maximumSlots = Number(
-                    reservation.cupoMaximo ?? 0,
-                  );
+            <p style={styles.totalText}>
+              Total: {reservations.length}
+            </p>
+          </div>
 
-                  const isFull =
-                    maximumSlots > 0
-                    && reservedSlots >= maximumSlots;
+          <button
+              type="button"
+              onClick={loadReservations}
+              disabled={loadingList}
+              style={{
+                ...styles.button,
+                opacity: loadingList ? 0.7 : 1,
+                cursor: loadingList
+                    ? 'not-allowed'
+                    : 'pointer',
+              }}
+          >
+            {loadingList
+                ? 'Cargando...'
+                : 'Actualizar'}
+          </button>
+        </div>
 
-                  const processing =
-                    processingId === reservation.id;
+        {loadingList && (
+            <p>Cargando reservas...</p>
+        )}
 
-                  return (
-                    <tr key={reservation.id}>
-                      <td style={styles.cell}>
-                        {reservation.id}
-                      </td>
+        {!loadingList
+            && reservations.length === 0 && (
+                <div className="empty-state">
+                  No existen reservas para mostrar.
+                </div>
+            )}
 
-                      <td style={styles.cell}>
-                        {formatText(reservation.tipo)}
-                      </td>
+        {!loadingList
+            && reservations.length > 0 && (
+                <>
+                  <div style={styles.tableContainer}>
+                    <table style={styles.table}>
+                      <thead>
+                      <tr>
+                        <th style={styles.cell}>
+                          ID
+                        </th>
 
-                      <td style={styles.cell}>
-                        {reservation.horse?.nombre
-                          || reservation.horse?.name
-                          || reservation.horse?.id
-                          || 'Sin asignar'}
-                      </td>
+                        <th style={styles.cell}>
+                          Tipo
+                        </th>
 
-                      <td style={styles.cell}>
-                        {reservation.fecha || '-'}
-                      </td>
+                        <th style={styles.cell}>
+                          Caballo
+                        </th>
 
-                      <td style={styles.cell}>
-                        {reservation.hora?.slice(0, 5)
-                          || '-'}
-                      </td>
+                        <th style={styles.cell}>
+                          Fecha
+                        </th>
 
-                      <td style={styles.cell}>
-                        {reservation.cliente || '-'}
-                      </td>
+                        <th style={styles.cell}>
+                          Hora
+                        </th>
 
-                      <td style={styles.cell}>
-                        <span
-                          style={{
-                            ...styles.status,
-                            ...(isCancelled
-                              ? styles.cancelledStatus
-                              : {}),
-                          }}
-                        >
-                          {formatText(
-                            reservation.estado,
-                          )}
-                        </span>
-                      </td>
+                        <th style={styles.cell}>
+                          Cliente
+                        </th>
 
-                      <td style={styles.cell}>
-                        {reservedSlots}
-                        {' / '}
-                        {maximumSlots}
-                      </td>
+                        <th style={styles.cell}>
+                          Estado
+                        </th>
 
-                      <td style={styles.cell}>
-                        <div style={styles.rowActions}>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              handleEdit(reservation)}
-                            disabled={
-                              processing
-                              || isCancelled
-                              || isCompleted
-                            }
-                            style={styles.editButton}
-                          >
-                            Editar
-                          </button>
+                        <th style={styles.cell}>
+                          Cupos
+                        </th>
 
-                          <button
-                            type="button"
-                            onClick={() =>
-                              handleReserveSlot(
-                                reservation,
+                        <th style={styles.cell}>
+                          Acciones
+                        </th>
+                      </tr>
+                      </thead>
+
+                      <tbody>
+                      {paginatedReservations.map(
+                          (reservation) => {
+                            const isCancelled =
+                                reservation.estado
+                                === 'CANCELADA';
+
+                            const isCompleted =
+                                reservation.estado
+                                === 'COMPLETADA';
+
+                            const reservedSlots =
+                                Number(
+                                    reservation
+                                        .cuposReservados
+                                    ?? 0,
+                                );
+
+                            const maximumSlots =
+                                Number(
+                                    reservation
+                                        .cupoMaximo
+                                    ?? 0,
+                                );
+
+                            const isFull =
+                                maximumSlots > 0
+                                && reservedSlots
+                                >= maximumSlots;
+
+                            const processing =
+                                processingId
+                                === reservation.id;
+
+                            return (
+                                <tr
+                                    key={
+                                      reservation.id
+                                    }
+                                >
+                                  <td style={styles.cell}>
+                                    {reservation.id}
+                                  </td>
+
+                                  <td style={styles.cell}>
+                                    {formatText(
+                                        reservation.tipo,
+                                    )}
+                                  </td>
+
+                                  <td style={styles.cell}>
+                                    {reservation
+                                            .horse?.nombre
+                                        || reservation
+                                            .horse?.name
+                                        || reservation
+                                            .horse?.id
+                                        || 'Sin asignar'}
+                                  </td>
+
+                                  <td style={styles.cell}>
+                                    {reservation.fecha
+                                        || '-'}
+                                  </td>
+
+                                  <td style={styles.cell}>
+                                    {reservation.hora
+                                            ?.slice(0, 5)
+                                        || '-'}
+                                  </td>
+
+                                  <td style={styles.cell}>
+                                    {reservation.cliente
+                                        || '-'}
+                                  </td>
+
+                                  <td style={styles.cell}>
+                            <span
+                                style={{
+                                  ...styles.status,
+                                  ...(isCancelled
+                                      ? styles
+                                          .cancelledStatus
+                                      : {}),
+                                }}
+                            >
+                              {formatText(
+                                  reservation.estado,
                               )}
-                            disabled={
-                              processing
-                              || isCancelled
-                              || isCompleted
-                              || isFull
-                            }
-                            style={styles.slotButton}
-                          >
-                            {isFull
-                              ? 'Sin cupos'
-                              : 'Reservar cupo'}
-                          </button>
+                            </span>
+                                  </td>
 
-                          <button
-                            type="button"
-                            onClick={() =>
-                              handleCancel(reservation)}
-                            disabled={
-                              processing
-                              || isCancelled
-                              || isCompleted
-                            }
-                            style={styles.cancelButton}
-                          >
-                            Cancelar
-                          </button>
+                                  <td style={styles.cell}>
+                                    {reservedSlots}
+                                    {' / '}
+                                    {maximumSlots}
+                                  </td>
 
-                          <button
-                            type="button"
-                            onClick={() =>
-                              handleDelete(reservation)}
-                            disabled={processing}
-                            style={styles.deleteButton}
-                          >
-                            Eliminar
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-    </ModulePage>
+                                  <td style={styles.cell}>
+                                    <div
+                                        style={
+                                          styles.rowActions
+                                        }
+                                    >
+                                      <button
+                                          type="button"
+                                          onClick={() =>
+                                              handleEdit(
+                                                  reservation,
+                                              )}
+                                          disabled={
+                                              processing
+                                              || isCancelled
+                                              || isCompleted
+                                          }
+                                          style={{
+                                            ...styles
+                                                .editButton,
+                                            ...(processing
+                                            || isCancelled
+                                            || isCompleted
+                                                ? styles
+                                                    .disabledButton
+                                                : {}),
+                                          }}
+                                      >
+                                        Editar
+                                      </button>
+
+                                      <button
+                                          type="button"
+                                          onClick={() =>
+                                              handleReserveSlot(
+                                                  reservation,
+                                              )}
+                                          disabled={
+                                              processing
+                                              || isCancelled
+                                              || isCompleted
+                                              || isFull
+                                          }
+                                          style={{
+                                            ...styles
+                                                .slotButton,
+                                            ...(processing
+                                            || isCancelled
+                                            || isCompleted
+                                            || isFull
+                                                ? styles
+                                                    .disabledButton
+                                                : {}),
+                                          }}
+                                      >
+                                        {isFull
+                                            ? 'Sin cupos'
+                                            : 'Reservar cupo'}
+                                      </button>
+
+                                      <button
+                                          type="button"
+                                          onClick={() =>
+                                              handleCancel(
+                                                  reservation,
+                                              )}
+                                          disabled={
+                                              processing
+                                              || isCancelled
+                                              || isCompleted
+                                          }
+                                          style={{
+                                            ...styles
+                                                .cancelButton,
+                                            ...(processing
+                                            || isCancelled
+                                            || isCompleted
+                                                ? styles
+                                                    .disabledButton
+                                                : {}),
+                                          }}
+                                      >
+                                        Cancelar
+                                      </button>
+
+                                      <button
+                                          type="button"
+                                          onClick={() =>
+                                              handleDelete(
+                                                  reservation,
+                                              )}
+                                          disabled={
+                                            processing
+                                          }
+                                          style={{
+                                            ...styles
+                                                .deleteButton,
+                                            ...(processing
+                                                ? styles
+                                                    .disabledButton
+                                                : {}),
+                                          }}
+                                      >
+                                        Eliminar
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                            );
+                          },
+                      )}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div className="pagination">
+              <span className="pagination-info">
+                Mostrando{' '}
+                {firstVisibleRecord}{' '}
+                a{' '}
+                {lastVisibleRecord}{' '}
+                de{' '}
+                {reservations.length}
+              </span>
+
+                    <div className="pagination-controls">
+                      <button
+                          type="button"
+                          className="pagination-button"
+                          onClick={
+                            goToPreviousPage
+                          }
+                          disabled={
+                              currentPage === 1
+                          }
+                      >
+                        <ChevronLeft
+                            size={17}
+                        />
+                        Anterior
+                      </button>
+
+                      <span className="pagination-page">
+                  Página{' '}
+                        <strong>
+                    {currentPage}
+                  </strong>{' '}
+                        de{' '}
+                        <strong>
+                    {totalPages}
+                  </strong>
+                </span>
+
+                      <button
+                          type="button"
+                          className="pagination-button"
+                          onClick={
+                            goToNextPage
+                          }
+                          disabled={
+                              currentPage
+                              === totalPages
+                          }
+                      >
+                        Siguiente
+                        <ChevronRight
+                            size={17}
+                        />
+                      </button>
+                    </div>
+                  </div>
+                </>
+            )}
+      </ModulePage>
   );
 }
 
@@ -537,6 +802,13 @@ const styles = {
     fontSize: '20px',
   },
 
+  totalText: {
+    marginTop: '5px',
+    marginBottom: 0,
+    color: '#69776f',
+    fontSize: '14px',
+  },
+
   button: {
     padding: '10px 16px',
     border: 'none',
@@ -559,7 +831,8 @@ const styles = {
 
   cell: {
     padding: '12px',
-    borderBottom: '1px solid #e1e7e4',
+    borderBottom:
+        '1px solid #e1e7e4',
     textAlign: 'left',
     verticalAlign: 'top',
   },
@@ -624,7 +897,11 @@ const styles = {
     fontWeight: 700,
     cursor: 'pointer',
   },
+
+  disabledButton: {
+    opacity: 0.5,
+    cursor: 'not-allowed',
+  },
 };
 
 export default ReservationsPage;
-

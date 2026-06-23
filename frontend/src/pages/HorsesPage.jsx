@@ -1,4 +1,6 @@
 import {
+    ChevronLeft,
+    ChevronRight,
     Image,
     Pencil,
     Plus,
@@ -7,10 +9,16 @@ import {
     Trash2,
     X,
 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import {
+    useEffect,
+    useMemo,
+    useState,
+} from 'react';
 
 import PageHeader from '../components/PageHeader';
 import horseService from '../services/horseService';
+
+const PAGE_SIZE = 5;
 
 const initialForm = {
     nombre: '',
@@ -22,8 +30,12 @@ const initialForm = {
     fotoUrl: '',
 };
 
-function getErrorMessage(requestError, fallbackMessage) {
-    const responseData = requestError.response?.data;
+function getErrorMessage(
+    requestError,
+    fallbackMessage,
+) {
+    const responseData =
+        requestError.response?.data;
 
     if (typeof responseData === 'string') {
         return responseData;
@@ -37,10 +49,15 @@ function getErrorMessage(requestError, fallbackMessage) {
         return responseData.message;
     }
 
-    if (responseData && typeof responseData === 'object') {
-        const firstMessage = Object.values(responseData).find(
-            (value) => typeof value === 'string',
-        );
+    if (
+        responseData
+        && typeof responseData === 'object'
+    ) {
+        const firstMessage =
+            Object.values(responseData).find(
+                (value) =>
+                    typeof value === 'string',
+            );
 
         if (firstMessage) {
             return firstMessage;
@@ -53,15 +70,22 @@ function getErrorMessage(requestError, fallbackMessage) {
 function HorsesPage() {
     const [horses, setHorses] = useState([]);
     const [form, setForm] = useState(initialForm);
-    const [editingId, setEditingId] = useState(null);
-    const [showForm, setShowForm] = useState(false);
+    const [editingId, setEditingId] =
+        useState(null);
+    const [showForm, setShowForm] =
+        useState(false);
     const [search, setSearch] = useState('');
-    const [loading, setLoading] = useState(true);
-    const [saving, setSaving] = useState(false);
+    const [currentPage, setCurrentPage] =
+        useState(1);
+    const [loading, setLoading] =
+        useState(true);
+    const [saving, setSaving] =
+        useState(false);
     const [error, setError] = useState('');
 
     const filteredHorses = useMemo(() => {
-        const value = search.trim().toLowerCase();
+        const value =
+            search.trim().toLowerCase();
 
         if (!value) {
             return horses;
@@ -76,19 +100,63 @@ function HorsesPage() {
             ]
                 .filter(Boolean)
                 .some((field) =>
-                    String(field).toLowerCase().includes(value),
+                    String(field)
+                        .toLowerCase()
+                        .includes(value),
                 ),
         );
     }, [horses, search]);
+
+    const totalPages = Math.max(
+        1,
+        Math.ceil(
+            filteredHorses.length / PAGE_SIZE,
+        ),
+    );
+
+    const startIndex =
+        (currentPage - 1) * PAGE_SIZE;
+
+    const endIndex =
+        startIndex + PAGE_SIZE;
+
+    const paginatedHorses = useMemo(
+        () =>
+            filteredHorses.slice(
+                startIndex,
+                endIndex,
+            ),
+        [
+            filteredHorses,
+            startIndex,
+            endIndex,
+        ],
+    );
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [search]);
+
+    useEffect(() => {
+        if (currentPage > totalPages) {
+            setCurrentPage(totalPages);
+        }
+    }, [currentPage, totalPages]);
 
     const loadHorses = async () => {
         try {
             setLoading(true);
             setError('');
 
-            const data = await horseService.getAll();
-            setHorses(Array.isArray(data) ? data : []);
+            const data =
+                await horseService.getAll();
+
+            setHorses(
+                Array.isArray(data) ? data : [],
+            );
         } catch (requestError) {
+            setHorses([]);
+
             setError(
                 getErrorMessage(
                     requestError,
@@ -105,12 +173,18 @@ function HorsesPage() {
     }, []);
 
     const handleChange = (event) => {
-        const { name, value } = event.target;
+        const { name, value } =
+            event.target;
 
         setForm((current) => ({
             ...current,
             [name]: value,
         }));
+    };
+
+    const handleSearchChange = (event) => {
+        setSearch(event.target.value);
+        setCurrentPage(1);
     };
 
     const resetForm = () => {
@@ -130,7 +204,8 @@ function HorsesPage() {
     const openEditForm = (horse) => {
         setForm({
             nombre: horse.nombre ?? '',
-            identificador: horse.identificador ?? '',
+            identificador:
+                horse.identificador ?? '',
             edad: horse.edad ?? '',
             raza: horse.raza ?? '',
             sexo: horse.sexo ?? 'MACHO',
@@ -141,6 +216,11 @@ function HorsesPage() {
         setEditingId(horse.id);
         setShowForm(true);
         setError('');
+
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth',
+        });
     };
 
     const handleSubmit = async (event) => {
@@ -163,18 +243,22 @@ function HorsesPage() {
             || Number(form.edad) < 0
             || Number(form.peso) < 0
         ) {
-            setError('La edad y el peso deben ser números válidos.');
+            setError(
+                'La edad y el peso deben ser números válidos.',
+            );
             return;
         }
 
         const horseData = {
             nombre: form.nombre.trim(),
-            identificador: form.identificador.trim(),
+            identificador:
+                form.identificador.trim(),
             edad: Number(form.edad),
             raza: form.raza.trim(),
             sexo: form.sexo,
             peso: Number(form.peso),
-            fotoUrl: form.fotoUrl.trim() || null,
+            fotoUrl:
+                form.fotoUrl.trim() || null,
         };
 
         try {
@@ -182,12 +266,18 @@ function HorsesPage() {
             setError('');
 
             if (editingId) {
-                await horseService.update(editingId, horseData);
+                await horseService.update(
+                    editingId,
+                    horseData,
+                );
             } else {
-                await horseService.create(horseData);
+                await horseService.create(
+                    horseData,
+                );
             }
 
             resetForm();
+            setCurrentPage(1);
             await loadHorses();
         } catch (requestError) {
             setError(
@@ -212,7 +302,11 @@ function HorsesPage() {
 
         try {
             setError('');
-            await horseService.remove(horse.id);
+
+            await horseService.remove(
+                horse.id,
+            );
+
             await loadHorses();
         } catch (requestError) {
             setError(
@@ -223,6 +317,28 @@ function HorsesPage() {
             );
         }
     };
+
+    const goToPreviousPage = () => {
+        setCurrentPage((page) =>
+            Math.max(1, page - 1),
+        );
+    };
+
+    const goToNextPage = () => {
+        setCurrentPage((page) =>
+            Math.min(totalPages, page + 1),
+        );
+    };
+
+    const firstVisibleRecord =
+        filteredHorses.length === 0
+            ? 0
+            : startIndex + 1;
+
+    const lastVisibleRecord = Math.min(
+        endIndex,
+        filteredHorses.length,
+    );
 
     return (
         <>
@@ -258,8 +374,9 @@ function HorsesPage() {
                             </h3>
 
                             <p>
-                                Completá los datos solicitados. La fotografía es
-                                opcional.
+                                Completá los datos
+                                solicitados. La fotografía
+                                es opcional.
                             </p>
                         </div>
 
@@ -277,21 +394,31 @@ function HorsesPage() {
                         <div className="form-grid">
                             <label className="form-field">
                                 <span>Nombre *</span>
+
                                 <input
                                     name="nombre"
                                     value={form.nombre}
-                                    onChange={handleChange}
+                                    onChange={
+                                        handleChange
+                                    }
                                     placeholder="Ejemplo: Relámpago"
                                     required
                                 />
                             </label>
 
                             <label className="form-field">
-                                <span>Identificador *</span>
+                                <span>
+                                    Identificador *
+                                </span>
+
                                 <input
                                     name="identificador"
-                                    value={form.identificador}
-                                    onChange={handleChange}
+                                    value={
+                                        form.identificador
+                                    }
+                                    onChange={
+                                        handleChange
+                                    }
                                     placeholder="Ejemplo: CAB-001"
                                     required
                                 />
@@ -299,12 +426,15 @@ function HorsesPage() {
 
                             <label className="form-field">
                                 <span>Edad *</span>
+
                                 <input
                                     name="edad"
                                     type="number"
                                     min="0"
                                     value={form.edad}
-                                    onChange={handleChange}
+                                    onChange={
+                                        handleChange
+                                    }
                                     placeholder="Edad en años"
                                     required
                                 />
@@ -312,10 +442,13 @@ function HorsesPage() {
 
                             <label className="form-field">
                                 <span>Raza *</span>
+
                                 <input
                                     name="raza"
                                     value={form.raza}
-                                    onChange={handleChange}
+                                    onChange={
+                                        handleChange
+                                    }
                                     placeholder="Ejemplo: Andaluz"
                                     required
                                 />
@@ -323,37 +456,53 @@ function HorsesPage() {
 
                             <label className="form-field">
                                 <span>Sexo *</span>
+
                                 <select
                                     name="sexo"
                                     value={form.sexo}
-                                    onChange={handleChange}
+                                    onChange={
+                                        handleChange
+                                    }
                                 >
-                                    <option value="MACHO">Macho</option>
-                                    <option value="HEMBRA">Hembra</option>
+                                    <option value="MACHO">
+                                        Macho
+                                    </option>
+
+                                    <option value="HEMBRA">
+                                        Hembra
+                                    </option>
                                 </select>
                             </label>
 
                             <label className="form-field">
                                 <span>Peso *</span>
+
                                 <input
                                     name="peso"
                                     type="number"
                                     min="0"
                                     step="0.01"
                                     value={form.peso}
-                                    onChange={handleChange}
+                                    onChange={
+                                        handleChange
+                                    }
                                     placeholder="Peso en kilogramos"
                                     required
                                 />
                             </label>
 
                             <label className="form-field">
-                                <span>URL de la fotografía</span>
+                                <span>
+                                    URL de la fotografía
+                                </span>
+
                                 <input
                                     name="fotoUrl"
                                     type="url"
                                     value={form.fotoUrl}
-                                    onChange={handleChange}
+                                    onChange={
+                                        handleChange
+                                    }
                                     placeholder="https://..."
                                 />
                             </label>
@@ -374,7 +523,10 @@ function HorsesPage() {
                                 disabled={saving}
                             >
                                 <Save size={18} />
-                                {saving ? 'Guardando...' : 'Guardar caballo'}
+
+                                {saving
+                                    ? 'Guardando...'
+                                    : 'Guardar caballo'}
                             </button>
                         </div>
                     </form>
@@ -384,8 +536,22 @@ function HorsesPage() {
             <section className="content-card">
                 <div className="table-toolbar">
                     <div>
-                        <h3>Caballos registrados</h3>
-                        <p>Total: {horses.length}</p>
+                        <h3>
+                            Caballos registrados
+                        </h3>
+
+                        <p>
+                            Total: {horses.length}
+                            {search && (
+                                <>
+                                    {' · '}
+                                    Encontrados:{' '}
+                                    {
+                                        filteredHorses.length
+                                    }
+                                </>
+                            )}
+                        </p>
                     </div>
 
                     <label className="search-field">
@@ -393,8 +559,9 @@ function HorsesPage() {
 
                         <input
                             value={search}
-                            onChange={(event) =>
-                                setSearch(event.target.value)}
+                            onChange={
+                                handleSearchChange
+                            }
                             placeholder="Buscar por nombre, identificador, raza o sexo"
                         />
                     </label>
@@ -405,97 +572,207 @@ function HorsesPage() {
                         Cargando caballos...
                     </div>
                 ) : (
-                    <div className="data-table-wrapper">
-                        <table className="data-table">
-                            <thead>
-                            <tr>
-                                <th>Fotografía</th>
-                                <th>Identificador</th>
-                                <th>Nombre</th>
-                                <th>Edad</th>
-                                <th>Raza</th>
-                                <th>Sexo</th>
-                                <th>Peso</th>
-                                <th>Acciones</th>
-                            </tr>
-                            </thead>
-
-                            <tbody>
-                            {filteredHorses.length === 0 ? (
+                    <>
+                        <div className="data-table-wrapper">
+                            <table className="data-table">
+                                <thead>
                                 <tr>
-                                    <td colSpan="8">
-                                        <div className="empty-table">
-                                            No hay caballos para mostrar.
-                                        </div>
-                                    </td>
+                                    <th>
+                                        Fotografía
+                                    </th>
+                                    <th>
+                                        Identificador
+                                    </th>
+                                    <th>Nombre</th>
+                                    <th>Edad</th>
+                                    <th>Raza</th>
+                                    <th>Sexo</th>
+                                    <th>Peso</th>
+                                    <th>Acciones</th>
                                 </tr>
-                            ) : (
-                                filteredHorses.map((horse) => (
-                                    <tr key={horse.id}>
-                                        <td>
-                                            {horse.fotoUrl ? (
-                                                <img
-                                                    className="horse-thumbnail"
-                                                    src={horse.fotoUrl}
-                                                    alt={horse.nombre}
-                                                />
-                                            ) : (
-                                                <div className="image-placeholder">
-                                                    <Image size={21} />
-                                                </div>
-                                            )}
-                                        </td>
+                                </thead>
 
-                                        <td>
-                        <span className="status-badge">
-                          {horse.identificador}
-                        </span>
-                                        </td>
-
-                                        <td>
-                                            <strong>{horse.nombre}</strong>
-                                        </td>
-
-                                        <td>{horse.edad} años</td>
-                                        <td>{horse.raza}</td>
-
-                                        <td>
-                        <span className="status-badge">
-                          {horse.sexo}
-                        </span>
-                                        </td>
-
-                                        <td>{horse.peso} kg</td>
-
-                                        <td>
-                                            <div className="table-actions">
-                                                <button
-                                                    className="table-icon-button"
-                                                    type="button"
-                                                    onClick={() =>
-                                                        openEditForm(horse)}
-                                                    aria-label={`Editar ${horse.nombre}`}
-                                                >
-                                                    <Pencil size={17} />
-                                                </button>
-
-                                                <button
-                                                    className="table-icon-button danger"
-                                                    type="button"
-                                                    onClick={() =>
-                                                        handleDelete(horse)}
-                                                    aria-label={`Eliminar ${horse.nombre}`}
-                                                >
-                                                    <Trash2 size={17} />
-                                                </button>
+                                <tbody>
+                                {filteredHorses.length
+                                === 0 ? (
+                                    <tr>
+                                        <td colSpan="8">
+                                            <div className="empty-table">
+                                                No hay caballos
+                                                para mostrar.
                                             </div>
                                         </td>
                                     </tr>
-                                ))
-                            )}
-                            </tbody>
-                        </table>
-                    </div>
+                                ) : (
+                                    paginatedHorses.map(
+                                        (horse) => (
+                                            <tr
+                                                key={
+                                                    horse.id
+                                                }
+                                            >
+                                                <td>
+                                                    {horse.fotoUrl ? (
+                                                        <img
+                                                            className="horse-thumbnail"
+                                                            src={
+                                                                horse.fotoUrl
+                                                            }
+                                                            alt={
+                                                                horse.nombre
+                                                            }
+                                                        />
+                                                    ) : (
+                                                        <div className="image-placeholder">
+                                                            <Image
+                                                                size={21}
+                                                            />
+                                                        </div>
+                                                    )}
+                                                </td>
+
+                                                <td>
+                                                        <span className="status-badge">
+                                                            {
+                                                                horse.identificador
+                                                            }
+                                                        </span>
+                                                </td>
+
+                                                <td>
+                                                    <strong>
+                                                        {
+                                                            horse.nombre
+                                                        }
+                                                    </strong>
+                                                </td>
+
+                                                <td>
+                                                    {horse.edad}
+                                                    {' '}
+                                                    años
+                                                </td>
+
+                                                <td>
+                                                    {
+                                                        horse.raza
+                                                    }
+                                                </td>
+
+                                                <td>
+                                                        <span className="status-badge">
+                                                            {
+                                                                horse.sexo
+                                                            }
+                                                        </span>
+                                                </td>
+
+                                                <td>
+                                                    {horse.peso}
+                                                    {' '}
+                                                    kg
+                                                </td>
+
+                                                <td>
+                                                    <div className="table-actions">
+                                                        <button
+                                                            className="table-icon-button"
+                                                            type="button"
+                                                            onClick={() =>
+                                                                openEditForm(
+                                                                    horse,
+                                                                )}
+                                                            aria-label={`Editar ${horse.nombre}`}
+                                                        >
+                                                            <Pencil
+                                                                size={17}
+                                                            />
+                                                        </button>
+
+                                                        <button
+                                                            className="table-icon-button danger"
+                                                            type="button"
+                                                            onClick={() =>
+                                                                handleDelete(
+                                                                    horse,
+                                                                )}
+                                                            aria-label={`Eliminar ${horse.nombre}`}
+                                                        >
+                                                            <Trash2
+                                                                size={17}
+                                                            />
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ),
+                                    )
+                                )}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {filteredHorses.length > 0 && (
+                            <div className="pagination">
+                                <span className="pagination-info">
+                                    Mostrando{' '}
+                                    {firstVisibleRecord}
+                                    {' '}a{' '}
+                                    {lastVisibleRecord}
+                                    {' '}de{' '}
+                                    {
+                                        filteredHorses.length
+                                    }
+                                </span>
+
+                                <div className="pagination-controls">
+                                    <button
+                                        type="button"
+                                        className="pagination-button"
+                                        onClick={
+                                            goToPreviousPage
+                                        }
+                                        disabled={
+                                            currentPage === 1
+                                        }
+                                    >
+                                        <ChevronLeft
+                                            size={17}
+                                        />
+                                        Anterior
+                                    </button>
+
+                                    <span className="pagination-page">
+                                        Página{' '}
+                                        <strong>
+                                            {currentPage}
+                                        </strong>
+                                        {' '}de{' '}
+                                        <strong>
+                                            {totalPages}
+                                        </strong>
+                                    </span>
+
+                                    <button
+                                        type="button"
+                                        className="pagination-button"
+                                        onClick={
+                                            goToNextPage
+                                        }
+                                        disabled={
+                                            currentPage
+                                            === totalPages
+                                        }
+                                    >
+                                        Siguiente
+                                        <ChevronRight
+                                            size={17}
+                                        />
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </>
                 )}
             </section>
         </>

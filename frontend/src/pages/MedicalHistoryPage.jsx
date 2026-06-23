@@ -1,5 +1,7 @@
 import {
     CalendarDays,
+    ChevronLeft,
+    ChevronRight,
     ClipboardList,
     HeartPulse,
     Pencil,
@@ -22,6 +24,8 @@ import PageHeader from '../components/PageHeader';
 import { ALERTS_UPDATED_EVENT } from '../services/alertService';
 import horseService from '../services/horseService';
 import medicalHistoryService from '../services/medicalHistoryService';
+
+const PAGE_SIZE = 5;
 
 const initialForm = {
     horseId: '',
@@ -148,6 +152,9 @@ function MedicalHistoryPage() {
     const [search, setSearch] =
         useState('');
 
+    const [currentPage, setCurrentPage] =
+        useState(1);
+
     const [loading, setLoading] =
         useState(true);
 
@@ -214,6 +221,59 @@ function MedicalHistoryPage() {
         horseFilter,
         typeFilter,
         search,
+    ]);
+
+    const totalPages = Math.max(
+        1,
+        Math.ceil(
+            filteredHistories.length / PAGE_SIZE,
+        ),
+    );
+
+    const startIndex =
+        (currentPage - 1) * PAGE_SIZE;
+
+    const endIndex =
+        startIndex + PAGE_SIZE;
+
+    const paginatedHistories = useMemo(
+        () =>
+            filteredHistories.slice(
+                startIndex,
+                endIndex,
+            ),
+        [
+            filteredHistories,
+            startIndex,
+            endIndex,
+        ],
+    );
+
+    const firstVisibleRecord =
+        filteredHistories.length === 0
+            ? 0
+            : startIndex + 1;
+
+    const lastVisibleRecord = Math.min(
+        endIndex,
+        filteredHistories.length,
+    );
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [
+        horseFilter,
+        typeFilter,
+        search,
+    ]);
+
+    useEffect(() => {
+        if (currentPage > totalPages) {
+            setCurrentPage(totalPages);
+        }
+    }, [
+        currentPage,
+        totalPages,
     ]);
 
     const loadData = async () => {
@@ -302,26 +362,19 @@ function MedicalHistoryPage() {
 
     const openEditForm = (history) => {
         setForm({
-            horseId:
-                String(
-                    history.horse?.id ?? '',
-                ),
-
+            horseId: String(
+                history.horse?.id ?? '',
+            ),
             tipo:
                 history.tipo ?? 'VACUNA',
-
             descripcion:
                 history.descripcion ?? '',
-
             fecha:
                 history.fecha ?? '',
-
             fechaProxima:
                 history.fechaProxima ?? '',
-
             fechaVencimiento:
                 history.fechaVencimiento ?? '',
-
             responsable:
                 history.responsable ?? '',
         });
@@ -402,24 +455,18 @@ function MedicalHistoryPage() {
             horse: {
                 id: Number(form.horseId),
             },
-
             tipo: form.tipo,
-
             descripcion:
                 form.descripcion.trim(),
-
             fecha: form.fecha,
-
             fechaProxima:
                 form.tipo === 'VACUNA'
                     ? form.fechaProxima
                     : null,
-
             fechaVencimiento:
                 form.tipo === 'TRATAMIENTO'
                     ? form.fechaVencimiento
                     : null,
-
             responsable:
                 form.responsable.trim(),
         };
@@ -457,6 +504,7 @@ function MedicalHistoryPage() {
             setForm(initialForm);
             setEditingId(null);
             setShowForm(false);
+            setCurrentPage(1);
 
             await loadData();
         } catch (requestError) {
@@ -507,6 +555,39 @@ function MedicalHistoryPage() {
                 ),
             );
         }
+    };
+
+    const handleHorseFilterChange = (
+        event,
+    ) => {
+        setHorseFilter(event.target.value);
+        setCurrentPage(1);
+    };
+
+    const handleTypeFilterChange = (
+        event,
+    ) => {
+        setTypeFilter(event.target.value);
+        setCurrentPage(1);
+    };
+
+    const handleSearchChange = (
+        event,
+    ) => {
+        setSearch(event.target.value);
+        setCurrentPage(1);
+    };
+
+    const goToPreviousPage = () => {
+        setCurrentPage((page) =>
+            Math.max(1, page - 1),
+        );
+    };
+
+    const goToNextPage = () => {
+        setCurrentPage((page) =>
+            Math.min(totalPages, page + 1),
+        );
     };
 
     return (
@@ -585,17 +666,14 @@ function MedicalHistoryPage() {
 
                                 <select
                                     name="horseId"
-                                    value={
-                                        form.horseId
-                                    }
+                                    value={form.horseId}
                                     onChange={
                                         handleChange
                                     }
                                     required
                                 >
                                     <option value="">
-                                        Seleccionar
-                                        caballo
+                                        Seleccionar caballo
                                     </option>
 
                                     {horses.map(
@@ -791,10 +869,9 @@ function MedicalHistoryPage() {
 
                         <select
                             value={horseFilter}
-                            onChange={(event) =>
-                                setHorseFilter(
-                                    event.target.value,
-                                )}
+                            onChange={
+                                handleHorseFilterChange
+                            }
                         >
                             <option value="TODOS">
                                 Todos los caballos
@@ -818,10 +895,9 @@ function MedicalHistoryPage() {
 
                         <select
                             value={typeFilter}
-                            onChange={(event) =>
-                                setTypeFilter(
-                                    event.target.value,
-                                )}
+                            onChange={
+                                handleTypeFilterChange
+                            }
                         >
                             <option value="TODOS">
                                 Todos los tipos
@@ -852,10 +928,9 @@ function MedicalHistoryPage() {
 
                             <input
                                 value={search}
-                                onChange={(event) =>
-                                    setSearch(
-                                        event.target.value,
-                                    )}
+                                onChange={
+                                    handleSearchChange
+                                }
                                 placeholder="Descripción o responsable"
                             />
                         </div>
@@ -890,158 +965,217 @@ function MedicalHistoryPage() {
                         para mostrar.
                     </div>
                 ) : (
-                    <div className="history-timeline">
-                        {filteredHistories.map(
-                            (history) => {
-                                const config =
-                                    typeConfig[
-                                        history.tipo
-                                        ]
-                                    || typeConfig
-                                        .OBSERVACION;
+                    <>
+                        <div className="history-timeline">
+                            {paginatedHistories.map(
+                                (history) => {
+                                    const config =
+                                        typeConfig[
+                                            history.tipo
+                                            ]
+                                        || typeConfig
+                                            .OBSERVACION;
 
-                                const TypeIcon =
-                                    config.icon;
+                                    const TypeIcon =
+                                        config.icon;
 
-                                return (
-                                    <article
-                                        className="history-item"
-                                        key={history.id}
-                                    >
-                                        <div className="history-marker">
-                                            <TypeIcon
-                                                size={21}
-                                            />
-                                        </div>
+                                    return (
+                                        <article
+                                            className="history-item"
+                                            key={history.id}
+                                        >
+                                            <div className="history-marker">
+                                                <TypeIcon
+                                                    size={21}
+                                                />
+                                            </div>
 
-                                        <div className="history-content">
-                                            <div className="history-topline">
-                                                <div>
-                                                    <span
-                                                        className={
-                                                            `history-type-badge history-type-${history.tipo?.toLowerCase()}`
-                                                        }
-                                                    >
-                                                        {
-                                                            config.label
-                                                        }
-                                                    </span>
+                                            <div className="history-content">
+                                                <div className="history-topline">
+                                                    <div>
+                                                        <span
+                                                            className={
+                                                                `history-type-badge history-type-${history.tipo?.toLowerCase()}`
+                                                            }
+                                                        >
+                                                            {
+                                                                config.label
+                                                            }
+                                                        </span>
 
-                                                    <h4>
+                                                        <h4>
+                                                            {history
+                                                                    .horse
+                                                                    ?.nombre
+                                                                || 'Caballo no disponible'}
+                                                        </h4>
+                                                    </div>
+
+                                                    <div className="history-date">
+                                                        <CalendarDays
+                                                            size={17}
+                                                        />
+
+                                                        {formatDate(
+                                                            history.fecha,
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                <p className="history-description">
+                                                    {
+                                                        history.descripcion
+                                                    }
+                                                </p>
+
+                                                <div className="history-meta">
+                                                    <span>
+                                                        <strong>
+                                                            Identificador:
+                                                        </strong>{' '}
+
                                                         {history
                                                                 .horse
-                                                                ?.nombre
-                                                            || 'Caballo no disponible'}
-                                                    </h4>
-                                                </div>
+                                                                ?.identificador
+                                                            || 'N/D'}
+                                                    </span>
 
-                                                <div className="history-date">
-                                                    <CalendarDays
+                                                    <span>
+                                                        <strong>
+                                                            Responsable:
+                                                        </strong>{' '}
+
+                                                        {
+                                                            history.responsable
+                                                        }
+                                                    </span>
+
+                                                    {history.tipo
+                                                        === 'VACUNA'
+                                                        && history
+                                                            .fechaProxima && (
+                                                            <span>
+                                                            <strong>
+                                                                Próxima vacunación:
+                                                            </strong>{' '}
+
+                                                                {formatDate(
+                                                                    history
+                                                                        .fechaProxima,
+                                                                )}
+                                                        </span>
+                                                        )}
+
+                                                    {history.tipo
+                                                        === 'TRATAMIENTO'
+                                                        && history
+                                                            .fechaVencimiento && (
+                                                            <span>
+                                                            <strong>
+                                                                Vencimiento:
+                                                            </strong>{' '}
+
+                                                                {formatDate(
+                                                                    history
+                                                                        .fechaVencimiento,
+                                                                )}
+                                                        </span>
+                                                        )}
+                                                </div>
+                                            </div>
+
+                                            <div className="history-actions">
+                                                <button
+                                                    className="table-icon-button"
+                                                    type="button"
+                                                    onClick={() =>
+                                                        openEditForm(
+                                                            history,
+                                                        )}
+                                                    aria-label="Editar registro"
+                                                >
+                                                    <Pencil
                                                         size={17}
                                                     />
+                                                </button>
 
-                                                    {formatDate(
-                                                        history.fecha,
-                                                    )}
-                                                </div>
+                                                <button
+                                                    className="table-icon-button danger"
+                                                    type="button"
+                                                    onClick={() =>
+                                                        handleDelete(
+                                                            history,
+                                                        )}
+                                                    aria-label="Eliminar registro"
+                                                >
+                                                    <Trash2
+                                                        size={17}
+                                                    />
+                                                </button>
                                             </div>
+                                        </article>
+                                    );
+                                },
+                            )}
+                        </div>
 
-                                            <p className="history-description">
-                                                {
-                                                    history.descripcion
-                                                }
-                                            </p>
+                        <div className="pagination">
+                            <span className="pagination-info">
+                                Mostrando{' '}
+                                {firstVisibleRecord}{' '}
+                                a{' '}
+                                {lastVisibleRecord}{' '}
+                                de{' '}
+                                {filteredHistories.length}
+                            </span>
 
-                                            <div className="history-meta">
-                                                <span>
-                                                    <strong>
-                                                        Identificador:
-                                                    </strong>{' '}
+                            <div className="pagination-controls">
+                                <button
+                                    type="button"
+                                    className="pagination-button"
+                                    onClick={
+                                        goToPreviousPage
+                                    }
+                                    disabled={
+                                        currentPage === 1
+                                    }
+                                >
+                                    <ChevronLeft
+                                        size={17}
+                                    />
+                                    Anterior
+                                </button>
 
-                                                    {history
-                                                            .horse
-                                                            ?.identificador
-                                                        || 'N/D'}
-                                                </span>
+                                <span className="pagination-page">
+                                    Página{' '}
+                                    <strong>
+                                        {currentPage}
+                                    </strong>{' '}
+                                    de{' '}
+                                    <strong>
+                                        {totalPages}
+                                    </strong>
+                                </span>
 
-                                                <span>
-                                                    <strong>
-                                                        Responsable:
-                                                    </strong>{' '}
-
-                                                    {
-                                                        history.responsable
-                                                    }
-                                                </span>
-
-                                                {history.tipo
-                                                    === 'VACUNA'
-                                                    && history
-                                                        .fechaProxima && (
-                                                        <span>
-                                                        <strong>
-                                                            Próxima vacunación:
-                                                        </strong>{' '}
-
-                                                            {formatDate(
-                                                                history
-                                                                    .fechaProxima,
-                                                            )}
-                                                    </span>
-                                                    )}
-
-                                                {history.tipo
-                                                    === 'TRATAMIENTO'
-                                                    && history
-                                                        .fechaVencimiento && (
-                                                        <span>
-                                                        <strong>
-                                                            Vencimiento:
-                                                        </strong>{' '}
-
-                                                            {formatDate(
-                                                                history
-                                                                    .fechaVencimiento,
-                                                            )}
-                                                    </span>
-                                                    )}
-                                            </div>
-                                        </div>
-
-                                        <div className="history-actions">
-                                            <button
-                                                className="table-icon-button"
-                                                type="button"
-                                                onClick={() =>
-                                                    openEditForm(
-                                                        history,
-                                                    )}
-                                                aria-label="Editar registro"
-                                            >
-                                                <Pencil
-                                                    size={17}
-                                                />
-                                            </button>
-
-                                            <button
-                                                className="table-icon-button danger"
-                                                type="button"
-                                                onClick={() =>
-                                                    handleDelete(
-                                                        history,
-                                                    )}
-                                                aria-label="Eliminar registro"
-                                            >
-                                                <Trash2
-                                                    size={17}
-                                                />
-                                            </button>
-                                        </div>
-                                    </article>
-                                );
-                            },
-                        )}
-                    </div>
+                                <button
+                                    type="button"
+                                    className="pagination-button"
+                                    onClick={
+                                        goToNextPage
+                                    }
+                                    disabled={
+                                        currentPage
+                                        === totalPages
+                                    }
+                                >
+                                    Siguiente
+                                    <ChevronRight
+                                        size={17}
+                                    />
+                                </button>
+                            </div>
+                        </div>
+                    </>
                 )}
             </section>
         </>
