@@ -104,7 +104,7 @@ function Sidebar({ open, onToggle }) {
                 </nav>
 
                 <footer className="sidebar-footer">
-                    <span>Proyecto final</span>
+                    <span>Examen Final</span>
                     <small>Melany y Josué</small>
                 </footer>
             </aside>
