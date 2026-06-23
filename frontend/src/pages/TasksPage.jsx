@@ -446,7 +446,9 @@ return (
                             <th style={styles.cell}>ID</th>
                             <th style={styles.cell}>Título</th>
                             <th style={styles.cell}>Empleado</th>
-                            <th style={styles.cell}>Fecha</th>
+                            <th style={styles.cell}>
+                                Fecha de asignación
+                            </th>
                             <th style={styles.cell}>Estado</th>
                             <th style={styles.cell}>Descripción</th>
                             <th style={styles.cell}>Acciones</th>
@@ -471,7 +473,7 @@ return (
                                 </td>
 
                                 <td style={styles.cell}>
-                                    {task.fecha || '-'}
+                                    {task.fechaAsignacion || '-'}
                                 </td>
 
                                 <td style={styles.cell}>
