@@ -880,3 +880,383 @@ a {
         white-space: normal;
     }
 }
+
+
+.feeding-filters {
+    display: grid;
+    grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+    gap: 17px;
+}
+
+.feeding-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 22px;
+    color: #28654f;
+}
+
+.feeding-heading h3,
+.feeding-heading p {
+    margin: 0;
+}
+
+.feeding-heading h3 {
+    color: #17211b;
+}
+
+.feeding-heading p {
+    margin-top: 4px;
+    color: #748078;
+    font-size: 0.88rem;
+}
+
+.feeding-grid {
+    display: grid;
+    grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+    gap: 18px;
+}
+
+.feeding-card {
+    padding: 20px;
+    border: 1px solid #dfe8e2;
+    border-radius: 15px;
+    background: #ffffff;
+    box-shadow: 0 4px 14px rgb(30 64 50 / 5%);
+}
+
+.feeding-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 17px;
+}
+
+.feeding-icon {
+    display: grid;
+    width: 46px;
+    height: 46px;
+    place-items: center;
+    border-radius: 13px;
+    background: #fff3dc;
+    color: #996317;
+}
+
+.feeding-horse {
+    padding-bottom: 15px;
+    border-bottom: 1px solid #e6ece8;
+}
+
+.feeding-horse h4,
+.feeding-horse span {
+    margin: 0;
+}
+
+.feeding-horse h4 {
+    font-size: 1.05rem;
+}
+
+.feeding-horse span {
+    display: inline-block;
+    margin-top: 5px;
+    color: #748078;
+    font-size: 0.82rem;
+}
+
+.feeding-detail {
+    display: flex;
+    align-items: flex-start;
+    gap: 11px;
+    margin-top: 15px;
+    color: #28654f;
+}
+
+.feeding-detail span,
+.feeding-detail strong {
+    display: block;
+}
+
+.feeding-detail span {
+    color: #748078;
+    font-size: 0.78rem;
+}
+
+.feeding-detail strong {
+    margin-top: 2px;
+    color: #26372e;
+    font-size: 0.9rem;
+}
+
+.feeding-observations {
+    margin-top: 17px;
+    padding: 13px;
+    border-radius: 11px;
+    background: #f6f9f7;
+}
+
+.feeding-observations span {
+    color: #617067;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.feeding-observations p {
+    margin: 5px 0 0;
+    color: #445149;
+    font-size: 0.86rem;
+    line-height: 1.45;
+}
+
+@media (max-width: 1150px) {
+    .feeding-grid {
+        grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 760px) {
+    .feeding-filters,
+    .feeding-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.inventory-filters {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    align-items: end;
+    gap: 17px;
+}
+
+.stock-checkbox {
+    display: flex;
+    min-height: 43px;
+    align-items: center;
+    gap: 9px;
+    padding: 0 14px;
+    border: 1px solid #d5dfd9;
+    border-radius: 10px;
+    color: #344c41;
+    font-size: 0.88rem;
+    font-weight: 700;
+}
+
+.stock-checkbox input {
+    width: 17px;
+    height: 17px;
+}
+
+.inventory-grid {
+    display: grid;
+    grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+    gap: 18px;
+}
+
+.inventory-card {
+    padding: 20px;
+    border: 1px solid #dfe8e2;
+    border-radius: 15px;
+    background: #ffffff;
+    box-shadow: 0 4px 14px rgb(30 64 50 / 5%);
+}
+
+.inventory-card-low {
+    border-color: #e9b3a6;
+    background: #fffafa;
+}
+
+.inventory-card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 14px;
+}
+
+.inventory-card h4 {
+    margin: 10px 0 0;
+    font-size: 1.05rem;
+}
+
+.inventory-quantity {
+    display: flex;
+    align-items: baseline;
+    gap: 7px;
+    margin-top: 22px;
+}
+
+.inventory-quantity strong {
+    color: #28654f;
+    font-size: 2rem;
+}
+
+.inventory-quantity span {
+    color: #738078;
+}
+
+.inventory-minimum {
+    margin-top: 8px;
+    color: #738078;
+    font-size: 0.84rem;
+}
+
+.low-stock-warning {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-top: 16px;
+    padding: 9px 11px;
+    border-radius: 9px;
+    background: #fff0ed;
+    color: #a43f31;
+    font-size: 0.84rem;
+    font-weight: 700;
+}
+
+@media (max-width: 1100px) {
+    .inventory-grid {
+        grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 760px) {
+    .inventory-filters,
+    .inventory-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+
+.supply-filters {
+    display: grid;
+    grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+    gap: 17px;
+}
+
+.supply-records-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.supply-record-card {
+    display: grid;
+    grid-template-columns: 52px minmax(0, 1fr) auto;
+    gap: 17px;
+    padding: 19px;
+    border: 1px solid #dfe8e2;
+    border-radius: 15px;
+    background: #ffffff;
+}
+
+.supply-record-icon {
+    display: grid;
+    width: 48px;
+    height: 48px;
+    place-items: center;
+    border-radius: 13px;
+    background: #fff3dc;
+    color: #996317;
+}
+
+.supply-record-content {
+    min-width: 0;
+}
+
+.supply-record-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.supply-record-top h4 {
+    margin: 9px 0 0;
+    font-size: 1.05rem;
+}
+
+.supply-record-date {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    color: #68766e;
+    font-size: 0.85rem;
+    white-space: nowrap;
+}
+
+.supply-record-details {
+    display: grid;
+    grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+    gap: 15px;
+    margin-top: 18px;
+}
+
+.supply-record-details div {
+    padding: 12px;
+    border-radius: 10px;
+    background: #f6f9f7;
+}
+
+.supply-record-details span,
+.supply-record-details strong,
+.supply-record-details small {
+    display: block;
+}
+
+.supply-record-details span {
+    color: #748078;
+    font-size: 0.76rem;
+}
+
+.supply-record-details strong {
+    margin-top: 4px;
+    color: #28382f;
+    font-size: 0.9rem;
+}
+
+.supply-record-details small {
+    margin-top: 3px;
+    color: #7b8880;
+}
+
+.supply-record-observations {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin-top: 15px;
+    color: #5d6c63;
+    font-size: 0.85rem;
+    line-height: 1.45;
+}
+
+@media (max-width: 900px) {
+    .supply-filters,
+    .supply-record-details {
+        grid-template-columns: 1fr;
+    }
+
+    .supply-record-card {
+        grid-template-columns: 48px minmax(0, 1fr);
+    }
+
+    .supply-record-card .history-actions {
+        grid-column: 2;
+    }
+}
+
+@media (max-width: 600px) {
+    .supply-record-top {
+        flex-direction: column;
+    }
+
+    .supply-record-date {
+        white-space: normal;
+    }
+}
