@@ -1,4 +1,6 @@
 import {
+    ChevronLeft,
+    ChevronRight,
     Search,
     ShieldCheck,
     Trash2,
@@ -16,6 +18,8 @@ import { Navigate } from 'react-router';
 import PageHeader from '../components/PageHeader';
 import authService from '../services/authService';
 import userService from '../services/userService';
+
+const PAGE_SIZE = 5;
 
 const roleOptions = [
     {
@@ -36,7 +40,10 @@ const roleOptions = [
     },
 ];
 
-function getErrorMessage(error, defaultMessage) {
+function getErrorMessage(
+    error,
+    defaultMessage,
+) {
     const responseData = error.response?.data;
 
     if (typeof responseData === 'string') {
@@ -51,10 +58,15 @@ function getErrorMessage(error, defaultMessage) {
         return responseData.message;
     }
 
-    if (responseData && typeof responseData === 'object') {
-        const firstMessage = Object.values(responseData).find(
-            (value) => typeof value === 'string',
-        );
+    if (
+        responseData
+        && typeof responseData === 'object'
+    ) {
+        const firstMessage =
+            Object.values(responseData).find(
+                (value) =>
+                    typeof value === 'string',
+            );
 
         if (firstMessage) {
             return firstMessage;
@@ -64,26 +76,36 @@ function getErrorMessage(error, defaultMessage) {
     return defaultMessage;
 }
 
-function formatRole(role) {
-    const option = roleOptions.find(
-        (currentOption) => currentOption.value === role,
-    );
-
-    return option?.label || role || 'Sin rol';
-}
-
 function UsersPage() {
-    const currentUser = authService.getStoredUser();
+    const currentUser =
+        authService.getStoredUser();
 
-    const [users, setUsers] = useState([]);
-    const [search, setSearch] = useState('');
-    const [loading, setLoading] = useState(true);
-    const [processingId, setProcessingId] = useState(null);
-    const [error, setError] = useState('');
-    const [message, setMessage] = useState('');
+    const [users, setUsers] =
+        useState([]);
+
+    const [search, setSearch] =
+        useState('');
+
+    const [currentPage, setCurrentPage] =
+        useState(1);
+
+    const [loading, setLoading] =
+        useState(true);
+
+    const [
+        processingId,
+        setProcessingId,
+    ] = useState(null);
+
+    const [error, setError] =
+        useState('');
+
+    const [message, setMessage] =
+        useState('');
 
     const filteredUsers = useMemo(() => {
-        const searchValue = search.trim().toLowerCase();
+        const searchValue =
+            search.trim().toLowerCase();
 
         if (!searchValue) {
             return users;
@@ -102,17 +124,72 @@ function UsersPage() {
                         .includes(searchValue),
                 ),
         );
-    }, [users, search]);
+    }, [
+        users,
+        search,
+    ]);
+
+    const totalPages = Math.max(
+        1,
+        Math.ceil(
+            filteredUsers.length / PAGE_SIZE,
+        ),
+    );
+
+    const startIndex =
+        (currentPage - 1) * PAGE_SIZE;
+
+    const endIndex =
+        startIndex + PAGE_SIZE;
+
+    const paginatedUsers = useMemo(
+        () =>
+            filteredUsers.slice(
+                startIndex,
+                endIndex,
+            ),
+        [
+            filteredUsers,
+            startIndex,
+            endIndex,
+        ],
+    );
+
+    const firstVisibleRecord =
+        filteredUsers.length === 0
+            ? 0
+            : startIndex + 1;
+
+    const lastVisibleRecord = Math.min(
+        endIndex,
+        filteredUsers.length,
+    );
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [search]);
+
+    useEffect(() => {
+        if (currentPage > totalPages) {
+            setCurrentPage(totalPages);
+        }
+    }, [
+        currentPage,
+        totalPages,
+    ]);
 
     const loadUsers = async () => {
         try {
             setLoading(true);
             setError('');
 
-            const data = await userService.getAll();
+            const data =
+                await userService.getAll();
 
             setUsers(
-                Array.isArray(data) ? data : [],
+                Array.isArray(data)
+                    ? data
+                    : [],
             );
         } catch (requestError) {
             setUsers([]);
@@ -129,18 +206,34 @@ function UsersPage() {
     };
 
     useEffect(() => {
-        if (currentUser?.rol === 'ADMINISTRADOR') {
+        if (
+            currentUser?.rol
+            === 'ADMINISTRADOR'
+        ) {
             loadUsers();
         } else {
             setLoading(false);
         }
     }, []);
 
-    if (currentUser?.rol !== 'ADMINISTRADOR') {
+    if (
+        currentUser?.rol
+        !== 'ADMINISTRADOR'
+    ) {
         return <Navigate to="/" replace />;
     }
 
-    const handleRoleChange = async (user, newRole) => {
+    const handleSearchChange = (
+        event,
+    ) => {
+        setSearch(event.target.value);
+        setCurrentPage(1);
+    };
+
+    const handleRoleChange = async (
+        user,
+        newRole,
+    ) => {
         if (user.id === currentUser?.id) {
             setError(
                 'No podés cambiar el rol de tu propia cuenta.',
@@ -182,7 +275,9 @@ function UsersPage() {
         }
     };
 
-    const handleToggleActive = async (user) => {
+    const handleToggleActive = async (
+        user,
+    ) => {
         if (user.id === currentUser?.id) {
             setError(
                 'No podés desactivar tu propia cuenta.',
@@ -190,7 +285,8 @@ function UsersPage() {
             return;
         }
 
-        const newActiveStatus = !user.activo;
+        const newActiveStatus =
+            !user.activo;
 
         try {
             setProcessingId(user.id);
@@ -253,7 +349,8 @@ function UsersPage() {
 
             setUsers((currentUsers) =>
                 currentUsers.filter(
-                    (current) => current.id !== user.id,
+                    (current) =>
+                        current.id !== user.id,
                 ),
             );
 
@@ -272,13 +369,31 @@ function UsersPage() {
         }
     };
 
+    const goToPreviousPage = () => {
+        setCurrentPage((page) =>
+            Math.max(1, page - 1),
+        );
+    };
+
+    const goToNextPage = () => {
+        setCurrentPage((page) =>
+            Math.min(
+                totalPages,
+                page + 1,
+            ),
+        );
+    };
+
     const activeUsers = users.filter(
         (user) => user.activo,
     ).length;
 
-    const administratorUsers = users.filter(
-        (user) => user.rol === 'ADMINISTRADOR',
-    ).length;
+    const administratorUsers =
+        users.filter(
+            (user) =>
+                user.rol
+                === 'ADMINISTRADOR',
+        ).length;
 
     return (
         <>
@@ -302,34 +417,57 @@ function UsersPage() {
             <div className="users-stats-grid">
                 <article className="users-stat-card">
                     <div className="users-stat-icon">
-                        <UserRoundCog size={23} />
+                        <UserRoundCog
+                            size={23}
+                        />
                     </div>
 
                     <div>
-                        <span>Total de usuarios</span>
-                        <strong>{users.length}</strong>
+                        <span>
+                            Total de usuarios
+                        </span>
+
+                        <strong>
+                            {users.length}
+                        </strong>
                     </div>
                 </article>
 
                 <article className="users-stat-card">
                     <div className="users-stat-icon">
-                        <UserCheck size={23} />
+                        <UserCheck
+                            size={23}
+                        />
                     </div>
 
                     <div>
-                        <span>Usuarios activos</span>
-                        <strong>{activeUsers}</strong>
+                        <span>
+                            Usuarios activos
+                        </span>
+
+                        <strong>
+                            {activeUsers}
+                        </strong>
                     </div>
                 </article>
 
                 <article className="users-stat-card">
                     <div className="users-stat-icon">
-                        <ShieldCheck size={23} />
+                        <ShieldCheck
+                            size={23}
+                        />
                     </div>
 
                     <div>
-                        <span>Administradores</span>
-                        <strong>{administratorUsers}</strong>
+                        <span>
+                            Administradores
+                        </span>
+
+                        <strong>
+                            {
+                                administratorUsers
+                            }
+                        </strong>
                     </div>
                 </article>
             </div>
@@ -337,11 +475,22 @@ function UsersPage() {
             <section className="content-card">
                 <div className="table-toolbar">
                     <div>
-                        <h3>Usuarios registrados</h3>
+                        <h3>
+                            Usuarios registrados
+                        </h3>
 
                         <p>
-                            Cambiá roles y controlá el acceso de
-                            cada usuario.
+                            Total: {users.length}
+
+                            {search && (
+                                <>
+                                    {' · '}
+                                    Encontrados:{' '}
+                                    {
+                                        filteredUsers.length
+                                    }
+                                </>
+                            )}
                         </p>
                     </div>
 
@@ -350,8 +499,9 @@ function UsersPage() {
 
                         <input
                             value={search}
-                            onChange={(event) =>
-                                setSearch(event.target.value)}
+                            onChange={
+                                handleSearchChange
+                            }
                             placeholder="Buscar por nombre, correo o rol"
                         />
                     </label>
@@ -361,176 +511,279 @@ function UsersPage() {
                     <div className="empty-state">
                         Cargando usuarios...
                     </div>
-                ) : filteredUsers.length === 0 ? (
+                ) : filteredUsers.length
+                === 0 ? (
                     <div className="empty-state">
-                        No hay usuarios para mostrar.
+                        No hay usuarios para
+                        mostrar.
                     </div>
                 ) : (
-                    <div className="data-table-wrapper">
-                        <table className="data-table users-table">
-                            <thead>
-                            <tr>
-                                <th>Usuario</th>
-                                <th>Correo</th>
-                                <th>Rol</th>
-                                <th>Estado</th>
-                                <th>Acciones</th>
-                            </tr>
-                            </thead>
+                    <>
+                        <div className="data-table-wrapper">
+                            <table className="data-table users-table">
+                                <thead>
+                                <tr>
+                                    <th>
+                                        Usuario
+                                    </th>
 
-                            <tbody>
-                            {filteredUsers.map((user) => {
-                                const isCurrentUser =
-                                    user.id
-                                    === currentUser?.id;
+                                    <th>
+                                        Correo
+                                    </th>
 
-                                const processing =
-                                    processingId
-                                    === user.id;
+                                    <th>
+                                        Rol
+                                    </th>
 
-                                return (
-                                    <tr key={user.id}>
-                                        <td>
-                                            <div className="user-cell">
-                                                <div className="user-avatar">
-                                                    {user.nombre
-                                                            ?.charAt(0)
-                                                            .toUpperCase()
-                                                        || 'U'}
-                                                </div>
+                                    <th>
+                                        Estado
+                                    </th>
 
-                                                <div>
-                                                    <strong>
-                                                        {user.nombre}
-                                                    </strong>
+                                    <th>
+                                        Acciones
+                                    </th>
+                                </tr>
+                                </thead>
 
-                                                    {isCurrentUser && (
-                                                        <small>
-                                                            Tu cuenta
-                                                        </small>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </td>
+                                <tbody>
+                                {paginatedUsers.map(
+                                    (user) => {
+                                        const isCurrentUser =
+                                            user.id
+                                            === currentUser?.id;
 
-                                        <td>{user.email}</td>
+                                        const processing =
+                                            processingId
+                                            === user.id;
 
-                                        <td>
-                                            <select
-                                                className="role-select"
-                                                value={user.rol}
-                                                disabled={
-                                                    processing
-                                                    || isCurrentUser
+                                        return (
+                                            <tr
+                                                key={
+                                                    user.id
                                                 }
-                                                onChange={(event) =>
-                                                    handleRoleChange(
-                                                        user,
-                                                        event.target.value,
-                                                    )}
                                             >
-                                                {roleOptions.map(
-                                                    (option) => (
-                                                        <option
-                                                            key={
-                                                                option.value
-                                                            }
-                                                            value={
-                                                                option.value
+                                                <td>
+                                                    <div className="user-cell">
+                                                        <div className="user-avatar">
+                                                            {user.nombre
+                                                                    ?.charAt(
+                                                                        0,
+                                                                    )
+                                                                    .toUpperCase()
+                                                                || 'U'}
+                                                        </div>
+
+                                                        <div>
+                                                            <strong>
+                                                                {
+                                                                    user.nombre
+                                                                }
+                                                            </strong>
+
+                                                            {isCurrentUser && (
+                                                                <small>
+                                                                    Tu cuenta
+                                                                </small>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </td>
+
+                                                <td>
+                                                    {
+                                                        user.email
+                                                    }
+                                                </td>
+
+                                                <td>
+                                                    <select
+                                                        className="role-select"
+                                                        value={
+                                                            user.rol
+                                                        }
+                                                        disabled={
+                                                            processing
+                                                            || isCurrentUser
+                                                        }
+                                                        onChange={(
+                                                            event,
+                                                        ) =>
+                                                            handleRoleChange(
+                                                                user,
+                                                                event
+                                                                    .target
+                                                                    .value,
+                                                            )}
+                                                    >
+                                                        {roleOptions.map(
+                                                            (
+                                                                option,
+                                                            ) => (
+                                                                <option
+                                                                    key={
+                                                                        option.value
+                                                                    }
+                                                                    value={
+                                                                        option.value
+                                                                    }
+                                                                >
+                                                                    {
+                                                                        option.label
+                                                                    }
+                                                                </option>
+                                                            ),
+                                                        )}
+                                                    </select>
+                                                </td>
+
+                                                <td>
+                                                        <span
+                                                            className={
+                                                                user.activo
+                                                                    ? 'user-status user-status-active'
+                                                                    : 'user-status user-status-inactive'
                                                             }
                                                         >
-                                                            {
-                                                                option.label
-                                                            }
-                                                        </option>
-                                                    ),
-                                                )}
-                                            </select>
-                                        </td>
-
-                                        <td>
-                                                <span
-                                                    className={
-                                                        user.activo
-                                                            ? 'user-status user-status-active'
-                                                            : 'user-status user-status-inactive'
-                                                    }
-                                                >
-                                                    {user.activo
-                                                        ? 'Activo'
-                                                        : 'Inactivo'}
-                                                </span>
-                                        </td>
-
-                                        <td>
-                                            <div className="table-actions">
-                                                <button
-                                                    type="button"
-                                                    className={
-                                                        user.activo
-                                                            ? 'user-action-button deactivate'
-                                                            : 'user-action-button activate'
-                                                    }
-                                                    disabled={
-                                                        processing
-                                                        || isCurrentUser
-                                                    }
-                                                    onClick={() =>
-                                                        handleToggleActive(
-                                                            user,
-                                                        )}
-                                                    title={
-                                                        user.activo
-                                                            ? 'Desactivar usuario'
-                                                            : 'Activar usuario'
-                                                    }
-                                                >
-                                                    {user.activo ? (
-                                                        <UserX
-                                                            size={17}
-                                                        />
-                                                    ) : (
-                                                        <UserCheck
-                                                            size={17}
-                                                        />
-                                                    )}
-
-                                                    <span>
                                                             {user.activo
-                                                                ? 'Desactivar'
-                                                                : 'Activar'}
+                                                                ? 'Activo'
+                                                                : 'Inactivo'}
                                                         </span>
-                                                </button>
+                                                </td>
 
-                                                <button
-                                                    type="button"
-                                                    className="user-action-button delete"
-                                                    disabled={
-                                                        processing
-                                                        || isCurrentUser
-                                                    }
-                                                    onClick={() =>
-                                                        handleDelete(
-                                                            user,
-                                                        )}
-                                                    title="Eliminar usuario"
-                                                >
-                                                    <Trash2
-                                                        size={17}
-                                                    />
+                                                <td>
+                                                    <div className="table-actions">
+                                                        <button
+                                                            type="button"
+                                                            className={
+                                                                user.activo
+                                                                    ? 'user-action-button deactivate'
+                                                                    : 'user-action-button activate'
+                                                            }
+                                                            disabled={
+                                                                processing
+                                                                || isCurrentUser
+                                                            }
+                                                            onClick={() =>
+                                                                handleToggleActive(
+                                                                    user,
+                                                                )}
+                                                            title={
+                                                                user.activo
+                                                                    ? 'Desactivar usuario'
+                                                                    : 'Activar usuario'
+                                                            }
+                                                        >
+                                                            {user.activo ? (
+                                                                <UserX
+                                                                    size={
+                                                                        17
+                                                                    }
+                                                                />
+                                                            ) : (
+                                                                <UserCheck
+                                                                    size={
+                                                                        17
+                                                                    }
+                                                                />
+                                                            )}
 
-                                                    <span>
-                                                            Eliminar
-                                                        </span>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                );
-                            })}
-                            </tbody>
-                        </table>
-                    </div>
+                                                            <span>
+                                                                    {user.activo
+                                                                        ? 'Desactivar'
+                                                                        : 'Activar'}
+                                                                </span>
+                                                        </button>
+
+                                                        <button
+                                                            type="button"
+                                                            className="user-action-button delete"
+                                                            disabled={
+                                                                processing
+                                                                || isCurrentUser
+                                                            }
+                                                            onClick={() =>
+                                                                handleDelete(
+                                                                    user,
+                                                                )}
+                                                            title="Eliminar usuario"
+                                                        >
+                                                            <Trash2
+                                                                size={
+                                                                    17
+                                                                }
+                                                            />
+
+                                                            <span>
+                                                                    Eliminar
+                                                                </span>
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    },
+                                )}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div className="pagination">
+                            <span className="pagination-info">
+                                Mostrando{' '}
+                                {firstVisibleRecord}{' '}
+                                a{' '}
+                                {lastVisibleRecord}{' '}
+                                de{' '}
+                                {filteredUsers.length}
+                            </span>
+
+                            <div className="pagination-controls">
+                                <button
+                                    type="button"
+                                    className="pagination-button"
+                                    onClick={
+                                        goToPreviousPage
+                                    }
+                                    disabled={
+                                        currentPage === 1
+                                    }
+                                >
+                                    <ChevronLeft
+                                        size={17}
+                                    />
+                                    Anterior
+                                </button>
+
+                                <span className="pagination-page">
+                                    Página{' '}
+                                    <strong>
+                                        {currentPage}
+                                    </strong>{' '}
+                                    de{' '}
+                                    <strong>
+                                        {totalPages}
+                                    </strong>
+                                </span>
+
+                                <button
+                                    type="button"
+                                    className="pagination-button"
+                                    onClick={
+                                        goToNextPage
+                                    }
+                                    disabled={
+                                        currentPage
+                                        === totalPages
+                                    }
+                                >
+                                    Siguiente
+                                    <ChevronRight
+                                        size={17}
+                                    />
+                                </button>
+                            </div>
+                        </div>
+                    </>
                 )}
             </section>
         </>
